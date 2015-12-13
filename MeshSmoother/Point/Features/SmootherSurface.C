@@ -20,41 +20,56 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef MESHSMOOTHERPOINTEDGE_H
-#define MESHSMOOTHERPOINTEDGE_H
+#include "SmootherSurface.H"
 
-#include "SmootherFeature.h"
+#include "polyMesh.H"
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+#include "SmootherBoundary.H"
 
-namespace Foam
-{
+// * * * * * * * * * * * * * * * Private Functions * * * * * * * * * * * * * //
 
-/*---------------------------------------------------------------------------*\
-                 Class MeshSmootherPointEdge Declaration
-\*---------------------------------------------------------------------------*/
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-class SmootherEdge
+Foam::SmootherSurface::SmootherSurface
+(
+    const label ref,
+    const label featureRef,
+    const point& pt
+)
 :
-    public SmootherFeature
+    SmootherFeature(ref, featureRef, pt)
 {
+}
 
-public:
-    SmootherEdge(const label ref, const label featureRef, const point &pt);
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-    void GETMeSmooth();
-    void snap();
-    void featLaplaceSmooth();
-    bool isEdge() const {return true;}
-    bool isSurface() const {return true;}
-};
+void Foam::SmootherSurface::GETMeSmooth()
+{
+    SmootherPoint::GETMeSmooth();
+    _movedPt = _bnd->snapToSurf(_featureRef, _movedPt);
+}
+
+void SmootherSurface::snap()
+{
+    _movedPt = _bnd->snapToSurf(_featureRef, _initialPt);
+}
+
+void SmootherSurface::featLaplaceSmooth()
+{
+    const labelList& pp = _polyMesh->pointPoints(_ptRef);
+    label nbPt = 0;
+    _movedPt = point(0.0, 0.0, 0.0);
+    forAll(pp, ptI)
+    {
+        if (_bnd->pt(pp[ptI])->isSurface())
+        {
+            _movedPt += _bnd->pt(pp[ptI])->getRelaxedPoint();
+            ++nbPt;
+        }
+    }
+    _movedPt /= nbPt;
+}
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-} // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#endif // MESHSMOOTHERPOINTEDGE_H
 
 // ************************************************************************* //

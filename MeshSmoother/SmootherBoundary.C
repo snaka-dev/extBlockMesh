@@ -20,11 +20,11 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "SmootherBoundary.h"
+#include "SmootherBoundary.H"
 
-#include "SmootherVertex.h"
-#include "SmootherEdge.h"
-#include "SmootherSurface.h"
+#include "SmootherVertex.H"
+#include "SmootherEdge.H"
+#include "SmootherSurface.H"
 
 #include "dictionary.H"
 #include "polyMesh.H"

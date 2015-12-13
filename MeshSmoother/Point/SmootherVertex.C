@@ -20,34 +20,17 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "SmootherBoundaryLayer.h"
+#include "SmootherVertex.H"
 
-// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * //
 
-// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
-
-Foam::SmootherBoundaryLayer::SmootherBoundaryLayer(const dictionary &blDict)
+Foam::SmootherVertex::SmootherVertex(const label ref, const point& pt)
 :
-    _nbLayers(readLabel(blDict.lookup("nSurfaceLayers"))),
-    _expansionRatio(readScalar(blDict.lookup("expansionRatio"))),
-    _relativeSize(readBool(blDict.lookup("relativeSizes"))),
-    _finalLayerThickness(readScalar(blDict.lookup("finalLayerThickness")))
+    SmootherPoint(ref, pt)
 {
-    Info<< "        - Number of BL       : " << _nbLayers << nl;
-    Info<< "        - Expansion ratio    : " << _expansionRatio << nl;
-    Info<< "        - Relatice size      : " << _relativeSize << nl;
-    Info<< "        - Final thickness    : " << _finalLayerThickness << nl;
 }
 
-Foam::SmootherBoundaryLayer::SmootherBoundaryLayer()
-:
-    _nbLayers(0.0),
-    _expansionRatio(1.0),
-    _relativeSize(true),
-    _finalLayerThickness(1)
-{
 
-}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 

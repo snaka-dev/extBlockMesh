@@ -88,7 +88,7 @@ License
 #include <ios>
 
 // -- Created class
-#include "MeshSmoother.h"
+#include "MeshSmoother.H"
 //-----------------------------------------
 
 using namespace Foam;
