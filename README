@@ -1,3 +1,5 @@
 * Download and installation instructions
   + To install from this Git repository, see
     [[ http://www.etudes-ng.net/home/development/extBlockMesh ]]
+* All the .cpp and .h files have been changed to .C and .H respectively to follow OpenFOAM style. 
+* After these minor modifications, extBlockMesh could be compiled smoothly with OpenFOAM-dev. 
