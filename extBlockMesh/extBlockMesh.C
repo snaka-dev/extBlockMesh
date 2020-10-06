@@ -100,135 +100,35 @@ int main(int argc, char *argv[])
     argList::noParallel();
     argList::addBoolOption
     (
-        "blockTopology",
-        "write block edges and centres as .obj files"
-    );
-    argList::addBoolOption
-    (
         "writeStep",
         "write mesh at different smoothing step"
     );
-    argList::addOption
-    (
-        "dict",
-        "file",
-        "specify alternative dictionary for the blockMesh description"
-    );
+    argList::addOption("dict", "file", "Alternative blockMeshDict");
 
-#   include "addRegionOption.H"
-#   include "setRootCase.H"
-#   include "createTime.H"
+    #include "addRegionOption.H"
+    #include "setRootCase.H"
+    #include "createTime.H"
 
-    const word dictName("blockMeshDict");
+    word regionName(polyMesh::defaultRegion);
+    word regionPath;
 
-    word regionName;
-    fileName polyMeshDir;
-
-    if (args.optionReadIfPresent("region", regionName, polyMesh::defaultRegion))
+    // Check if the region is specified otherwise mesh the default region
+    if (args.optionReadIfPresent("region", regionName))
     {
-        // constant/<region>/polyMesh/blockMeshDict
-        polyMeshDir = regionName/polyMesh::meshSubDir;
-
         Info<< nl << "Generating mesh for region " << regionName << endl;
-    }
-    else
-    {
-        // constant/polyMesh/blockMeshDict
-        polyMeshDir = polyMesh::meshSubDir;
+        regionPath = regionName;
     }
 
-    IOobject meshDictIO
-    (
-        dictName,
-        runTime.constant(),
-        polyMeshDir,
-        runTime,
-        IOobject::MUST_READ,
-        IOobject::NO_WRITE,
-        false
-    );
+    // Locate appropriate blockMeshDict
+    #include "findBlockMeshDict.H"
 
-    if (args.optionFound("dict"))
-    {
-        const fileName dictPath = args["dict"];
-
-        meshDictIO = IOobject
-        (
-            (
-                isDir(dictPath)
-              ? dictPath/dictName
-              : dictPath
-            ),
-            runTime,
-            IOobject::MUST_READ,
-            IOobject::NO_WRITE,
-            false
-        );
-    }
-
-    if (!meshDictIO.headerOk())
-    {
-        FatalErrorIn(args.executable())
-            << "Cannot open mesh description file\n    "
-            << meshDictIO.objectPath()
-            << nl
-            << exit(FatalError);
-    }
-
-    Info<< "Creating block mesh from\n    "
-        << meshDictIO.objectPath() << endl;
-
-    blockMesh::verbose(false);
-
-    IOdictionary meshDict(meshDictIO);
     blockMesh blocks(meshDict, regionName);
-
-    if (args.optionFound("blockTopology"))
-    {
-        // Write mesh as edges.
-        {
-            fileName objMeshFile("blockTopology.obj");
-
-            OFstream str(runTime.path()/objMeshFile);
-
-            Info<< nl << "Dumping block structure as Lightwave obj format"
-                << " to " << objMeshFile << endl;
-
-            blocks.writeTopology(str);
-        }
-
-        // Write centres of blocks
-        {
-            fileName objCcFile("blockCentres.obj");
-
-            OFstream str(runTime.path()/objCcFile);
-
-            Info<< nl << "Dumping block centres as Lightwave obj format"
-                << " to " << objCcFile << endl;
-
-            const polyMesh& topo = blocks.topology();
-
-            const pointField& cellCentres = topo.cellCentres();
-
-            forAll(cellCentres, cellI)
-            {
-                //point cc = b.blockShape().centre(b.points());
-                const point& cc = cellCentres[cellI];
-
-                str << "v " << cc.x() << ' ' << cc.y() << ' ' << cc.z() << nl;
-            }
-        }
-
-        Info<< nl << "end" << endl;
-
-        return 0;
-    }
-
-
-    Info<< nl << "Creating polyMesh from blockMesh" << endl;
+    blocks.verbose(false);
 
     word defaultFacesName = "defaultFaces";
     word defaultFacesType = emptyPolyPatch::typeName;
+
+    Info<< nl << "Creating polyMesh from blockMesh" << endl;
 
     polyMesh mesh
     (
@@ -238,7 +138,7 @@ int main(int argc, char *argv[])
             runTime.constant(),
             runTime
         ),
-        xferCopy(blocks.points()),           // could we re-use space?
+        pointField(blocks.points()),
         blocks.cells(),
         blocks.patches(),
         blocks.patchNames(),
@@ -264,7 +164,7 @@ int main(int argc, char *argv[])
         false
     );
 
-    if (!smootherDictIO.headerOk())
+    if (!smootherDictIO.typeHeaderOk<IOdictionary>(true))
     {
         FatalErrorIn(args.executable())
             << "Cannot open mesh smoothing file\n    "
@@ -297,106 +197,12 @@ int main(int argc, char *argv[])
     // End of smoothing
     //##########################################################################
 
-    // Read in a list of dictionaries for the merge patch pairs
-    if (meshDict.found("mergePatchPairs"))
-    {
-        List<Pair<word> > mergePatchPairs
-        (
-            meshDict.lookup("mergePatchPairs")
-        );
+    // Merge patch pairs (dictionary entry "mergePatchPairs")
+    #include "mergePatchPairs.H"
 
-#       include "mergePatchPairs.H"
-    }
-    else
-    {
-        Info<< nl << "There are no merge patch pairs edges" << endl;
-    }
+    // Set any cellZones
+    #include "addCellZones.H"
 
-
-    // Set any cellZones (note: cell labelling unaffected by above
-    // mergePatchPairs)
-
-    label nZones = blocks.numZonedBlocks();
-
-    if (nZones > 0)
-    {
-        Info<< nl << "Adding cell zones" << endl;
-
-        // Map from zoneName to cellZone index
-        HashTable<label> zoneMap(nZones);
-
-        // Cells per zone.
-        List<DynamicList<label> > zoneCells(nZones);
-
-        // Running cell counter
-        label cellI = 0;
-
-        // Largest zone so far
-        label freeZoneI = 0;
-
-        forAll(blocks, blockI)
-        {
-            const block& b = blocks[blockI];
-            const labelListList& blockCells = b.cells();
-            const word& zoneName = b.blockDef().zoneName();
-
-            if (zoneName.size())
-            {
-                HashTable<label>::const_iterator iter = zoneMap.find(zoneName);
-
-                label zoneI;
-
-                if (iter == zoneMap.end())
-                {
-                    zoneI = freeZoneI++;
-
-                    Info<< "    " << zoneI << '\t' << zoneName << endl;
-
-                    zoneMap.insert(zoneName, zoneI);
-                }
-                else
-                {
-                    zoneI = iter();
-                }
-
-                forAll(blockCells, i)
-                {
-                    zoneCells[zoneI].append(cellI++);
-                }
-            }
-            else
-            {
-                cellI += b.cells().size();
-            }
-        }
-
-
-        List<cellZone*> cz(zoneMap.size());
-
-        Info<< nl << "Writing cell zones as cellSets" << endl;
-
-        forAllConstIter(HashTable<label>, zoneMap, iter)
-        {
-            label zoneI = iter();
-
-            cz[zoneI] = new cellZone
-            (
-                iter.key(),
-                zoneCells[zoneI].shrink(),
-                zoneI,
-                mesh.cellZones()
-            );
-
-            // Write as cellSet for ease of processing
-            cellSet cset(mesh, iter.key(), zoneCells[zoneI].shrink());
-            cset.write();
-        }
-
-        mesh.pointZones().setSize(0);
-        mesh.faceZones().setSize(0);
-        mesh.cellZones().setSize(0);
-        mesh.addZones(List<pointZone*>(0), List<faceZone*>(0), cz);
-    }
 
     // Set the precision of the points data to 10
     IOstream::defaultPrecision(max(10u, IOstream::defaultPrecision()));

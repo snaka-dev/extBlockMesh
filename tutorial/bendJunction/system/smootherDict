@@ -1,8 +1,8 @@
 /*--------------------------------*- C++ -*----------------------------------*\
 | =========                 |                                                 |
 | \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  2.2.2                                 |
-|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|  \\    /   O peration     | Version:  v2006                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
 |    \\/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
 FoamFile
@@ -19,7 +19,7 @@ smoothControls
 {
     // Max number of iterations
     maxIterations               500;
-    
+
     // The regularizing speed of the transformation depends on the choice of the
     // transformation parameter
     transformParameter          0.666;
@@ -36,11 +36,11 @@ smoothControls
 
     // Relaxation table for min cycle
     snapRelaxationTable         (1.0 0.5 0.25 0.1 0.05 0);
-   
-    // During min cycle, if worst cell quality is not changing/increasing for 
+
+    // During min cycle, if worst cell quality is not changing/increasing for
     // maxIneffectiveIteration, stop the smoothing
     maxMinCycleNoChange          5;
-    
+
     ratioWorstQualityForMin      0.2;
 }
 
@@ -53,48 +53,48 @@ snapControls
     // faces it is 180, for straight angles it is 90. To pick up straight edges
     // only use included angle of 91 degrees
     featureAngle                 152;
-    
-    // 
+
+    //
     minEdgeForFeature            0;
     minFeatureEdgeLength         1e-20;
 
     boundaries
     {
-        // List of boundary for wich you want a specific behavior: 
+        // List of boundary for wich you want a specific behavior:
         // - snap to triSurface -> give the triSurface name
         // - use internal edges -> true or false
-        
+
         Inlet
         {
             triSurface           Inlet.obj;
             internalFeatureEdges false;
         }
-        
+
         Outlet
         {
             triSurface           Outlet.obj;
             internalFeatureEdges false;
         }
-        
+
         BigPipe
         {
             triSurface           BigPipe.obj;
             internalFeatureEdges false;
         }
-        
+
         InletSmall
         {
             triSurface           InletSmall.obj;
             internalFeatureEdges false;
         }
-        
+
         SmallPipe
         {
             triSurface           SmallPipe.obj;
             internalFeatureEdges false;
         }
     }
-    
+
     // For debug purpose, write features vertex, edges, boundary and interior
     // point
     writeFeatures                false;

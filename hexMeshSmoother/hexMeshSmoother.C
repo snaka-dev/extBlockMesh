@@ -72,12 +72,10 @@ int main(int argc, char *argv[])
         false
     );
 
-    if (!smootherDictIO.headerOk())
+    if (!smootherDictIO.typeHeaderOk<IOdictionary>(true))
     {
-        FatalErrorIn(args.executable())
-            << "Cannot open mesh smoothing file\n    "
-            << smootherDictIO.objectPath()
-            << nl
+        FatalErrorInFunction
+            << smootherDictIO.objectPath() << nl
             << exit(FatalError);
     }
 

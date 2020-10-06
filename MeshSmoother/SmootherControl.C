@@ -30,29 +30,30 @@ Foam::SmootherControl::SmootherControl(dictionary *smootherDict)
 {
     // Get smoother parameters
     const dictionary& smoothDic = smootherDict->subDict("smoothControls");
-    _maxIterations = readLabel(smoothDic.lookup("maxIterations"));
-    _transformParam = readScalar(smoothDic.lookup("transformParameter"));
-    _meanImprovTol = readScalar(smoothDic.lookup("meanImprovTol"));
-    _maxMinCycleNoChange = readLabel(smoothDic.lookup("maxMinCycleNoChange"));
-    _meanRelaxTable = readList<scalar>(smoothDic.lookup("meanRelaxationTable"));
-    _minRelaxTable = readList<scalar>(smoothDic.lookup("minRelaxationTable"));
-    _snapRelaxTable = readList<scalar>(smoothDic.lookup("snapRelaxationTable"));
-    _ratioForMin = readScalar(smoothDic.lookup("ratioWorstQualityForMin"));
 
-    if (*_meanRelaxTable.rbegin() > VSMALL)
+    smoothDic.readEntry("maxIterations", _maxIterations);
+    smoothDic.readEntry("transformParameter", _transformParam);
+    smoothDic.readEntry("meanImprovTol", _meanImprovTol);
+    smoothDic.readEntry("maxMinCycleNoChange", _maxMinCycleNoChange);
+    smoothDic.readEntry("meanRelaxationTable", _meanRelaxTable);
+    smoothDic.readEntry("minRelaxationTable", _minRelaxTable);
+    smoothDic.readEntry("snapRelaxationTable", _snapRelaxTable);
+    smoothDic.readEntry("ratioWorstQualityForMin", _ratioForMin);
+
+    if (_meanRelaxTable.last() > VSMALL)
     {
-        _meanRelaxTable.append(0.0);
+        _meanRelaxTable.append(0);
     }
-    if (*_minRelaxTable.rbegin() > VSMALL)
+    if (_minRelaxTable.last() > VSMALL)
     {
-        _minRelaxTable.append(0.0);
+        _minRelaxTable.append(0);
     }
 
-    if (*_snapRelaxTable.rbegin() > VSMALL)
+    if (_snapRelaxTable.last() > VSMALL)
     {
-        _snapRelaxTable.append(0.0);
+        _snapRelaxTable.append(0);
     }
-//    if (*_snapRelaxTable.begin() < (1.0 - VSMALL))
+//    if (_snapRelaxTable.first() < (1.0 - VSMALL))
 //    {
 //        scalarList relax(_snapRelaxTable.size() + 1);
 //        relax[0] = 1.0;

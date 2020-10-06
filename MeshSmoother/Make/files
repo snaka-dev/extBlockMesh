@@ -10,4 +10,4 @@ Point/Features/SmootherFeature.C
 Point/Features/SmootherSurface.C
 BoundaryLayer/SmootherBoundaryLayer.C
 
-LIB = $(FOAM_USER_LIBBIN)/libMeshSmoother
+LIB = $(FOAM_MODULE_LIBBIN)/libMeshSmoother

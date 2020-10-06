@@ -73,7 +73,7 @@ void Foam::SmootherBoundary::analyseDict(dictionary &snapDict)
 
             if (patchDic.found("triSurface"))
             {
-                word file = patchDic.lookup("triSurface");
+                word file(patchDic.lookup("triSurface"));
 
                 bool exist = false;
                 for(label patchJ = 0; patchJ < NbPolyPatchs && !exist; ++patchJ)
@@ -96,7 +96,7 @@ void Foam::SmootherBoundary::analyseDict(dictionary &snapDict)
                             IOobject::NO_WRITE
                         );
 
-                        triSurface* bnd = new triSurface(surfFile.filePath());
+                        triSurface* bnd = new triSurface(surfFile.objectPath());
                         addTriFace(patchJ, bnd);
 
                         if (patchDic.found("internalFeatureEdges"))

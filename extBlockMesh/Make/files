@@ -1,0 +1,3 @@
+extBlockMesh.C
+
+EXE = $(FOAM_MODULE_APPBIN)/extBlockMesh

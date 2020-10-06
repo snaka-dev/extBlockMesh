@@ -61,6 +61,7 @@ Foam::scalar Foam::SmootherCell::tetCellQuality(const label ref) const
     return 0.0;
 }
 
+
 scalar SmootherCell::fastPow(const scalar &s) const
 {
     union
@@ -73,6 +74,7 @@ scalar SmootherCell::fastPow(const scalar &s) const
     u.x[0] = 0;
     return u.d;
 }
+
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -146,8 +148,9 @@ Foam::pointField Foam::SmootherCell::geometricTransform()
     const point c = (H[0] + H[1] + H[2] + H[3] + H[4] + H[5] + H[6] + H[7])/8.0;
     const pointField C(8, c);
 
-    return (C + length*(H - C));
+    return pointField(C + length*(H - C));
 }
+
 
 void Foam::SmootherCell::setStaticItems(SmootherBoundary* bnd, const scalar &t)
 {
@@ -155,6 +158,5 @@ void Foam::SmootherCell::setStaticItems(SmootherBoundary* bnd, const scalar &t)
     _bnd = bnd;
 }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 // ************************************************************************* //

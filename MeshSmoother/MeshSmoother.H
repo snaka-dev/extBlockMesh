@@ -24,8 +24,11 @@ License
 #define MESHSMOOTHER_H
 
 #include "fvCFD.H"
-
 #include <map>
+
+#if (OPENFOAM >= 1806)
+#include "polyFields.H"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -80,8 +83,14 @@ class MeshSmoother
         bool runIteration();
         pointField getMovedPoints() const;
 
+
+        #if (OPENFOAM >= 1806)
         // Write the mesh and meshQuality
-        void writeMesh(const fvMesh& meshFv, volScalarField &meshQuality) const;
+        void writeMesh(polyScalarField& meshQuality) const;
+        #else
+        // Write the mesh and meshQuality
+        void writeMesh(volScalarField& meshQuality) const;
+        #endif
 
         // Smoothing algo
         void GETMeSmoothing();
@@ -96,11 +105,13 @@ public:
         (
             polyMesh *mesh,
             dictionary *smootherDict,
-            blockMesh *blocks = 0
+            blockMesh *blocks = nullptr
         );
+
 
     //- Destructor
     ~MeshSmoother();
+
 
     //- Member functions
 
