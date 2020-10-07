@@ -34,57 +34,34 @@ using namespace Foam;
 int main(int argc, char *argv[])
 {
     argList::noParallel();
+    argList::addBoolOption
+    (
+        "writeStep",
+        "write mesh at different smoothing step"
+    );
 
     #include "addRegionOption.H"
     #include "setRootCase.H"
     #include "createTime.H"
     #include "createMesh.H"
 
-    Info<< nl << "Initialize smoother algorithm" << nl;
-
-    const word smootherDictName("smootherDict");
-    IOobject smootherDictIO
-    (
-        smootherDictName,
-        runTime.system(),
-        "",
-        runTime,
-        IOobject::MUST_READ,
-        IOobject::NO_WRITE,
-        false
-    );
-
-    if (!smootherDictIO.typeHeaderOk<IOdictionary>(true))
+    // Smoothing
     {
-        FatalErrorInFunction
-            << smootherDictIO.objectPath() << nl
-            << exit(FatalError);
+        #include "createSmoother.H"
+        MeshSmoother& smoother = smootherPtr();
+
+        if (args.optionFound("writeStep"))
+        {
+            smoother.updateAndWrite(runTime);
+        }
+        else
+        {
+            smoother.update();
+
+            // Reset mesh directory to constant/polyMesh !!! Hard to find :P
+            mesh.setInstance(runTime.constant());
+        }
     }
-
-    IOdictionary smootherDict(smootherDictIO);
-    MeshSmoother meshSmoother(&mesh, &smootherDict);
-
-    // TODO add writeStep option for hexMeshSmoother
-//    if (args.optionFound("writeStep"))
-//    {
-//        meshSmoother.updateAndWrite
-//        (
-//            regionName,
-//            defaultFacesName,
-//            defaultFacesType,
-//            runTime
-//        );
-//    }
-//    else
-    {
-        meshSmoother.update();
-
-        // Reset mesh directory to constant/polyMesh !!! Hard to find :P
-        mesh.setInstance(runTime.constant());
-    }
-
-    // End of smoothing
-    //##########################################################################
 
 
     // Set the precision of the points data to 10

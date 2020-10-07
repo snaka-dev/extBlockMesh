@@ -24,7 +24,6 @@ License
 #define MESHSMOOTHER_H
 
 #include "polyMesh.H"
-#include "blockMesh.H"
 
 #if (OPENFOAM >= 1806)
     #include "polyFields.H"
@@ -40,6 +39,7 @@ namespace Foam
 {
 
 // Forward Declarations
+class blockMesh;
 class SmootherCell;
 class SmootherControl;
 class SmootherParameter;
@@ -51,6 +51,15 @@ class SmootherBoundary;
 
 class MeshSmoother
 {
+    // Typedefs
+
+        #if (OPENFOAM >= 1806)
+        typedef polyScalarField qualityFieldType;
+        #else
+        typedef volScalarField qualityFieldType;
+        #endif
+
+
     // Private Data
 
         // Pointer of parents
@@ -90,14 +99,7 @@ class MeshSmoother
 
 
         //- Write the mesh and meshQuality
-        void writeMesh
-        (
-            #if (OPENFOAM >= 1806)
-            polyScalarField& meshQuality
-            #else
-            volScalarField& meshQuality
-            #endif
-        ) const;
+        void writeMesh(qualityFieldType& meshQuality) const;
 
         // Smoothing algo
         void GETMeSmoothing();
@@ -122,16 +124,24 @@ public:
 
     // Member Functions
 
+        //- Attach blocks to the smoother. A nullptr is allowed
+        void setBlocks(blockMesh* blocks);
+
         //- Smooth the mesh acording to smoothDict
         void update();
 
         //- Smooth the mesh acording to smoothDict and write intermediate mesh
-        void updateAndWrite
+        //  \return the number of fields written
+        label updateAndWrite(Time& runTime);
+
+        //- Smooth the mesh acording to smoothDict and write intermediate mesh
+        //  \return the number of fields written
+        label updateAndWrite
         (
-            word &regionName,
-            word &defaultFacesName,
-            word &defaultFacesType,
-            Time &runTime
+            word& regionName,
+            word& defaultFacesName,
+            word& defaultFacesType,
+            Time& runTime
         );
 
         //- Get tranformation treshold

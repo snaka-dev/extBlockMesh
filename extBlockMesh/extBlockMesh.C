@@ -142,55 +142,33 @@ int main(int argc, char *argv[])
         defaultFacesType
     );
 
-    // ########################################################################
+
     // Smoothing
-
-    Info<< nl << "Initialize smoother algorithm" << nl;
-
-    const word smootherDictName("smootherDict");
-    IOobject smootherDictIO
-    (
-        smootherDictName,
-        runTime.system(),
-        "",
-        runTime,
-        IOobject::MUST_READ,
-        IOobject::NO_WRITE,
-        false
-    );
-
-    if (!smootherDictIO.typeHeaderOk<IOdictionary>(true))
+    label nWritten = 0;
     {
-        FatalErrorIn(args.executable())
-            << "Cannot open mesh smoothing file\n    "
-            << smootherDictIO.objectPath()
-            << nl
-            << exit(FatalError);
+        #include "createSmoother.H"
+        MeshSmoother& smoother = smootherPtr();
+        smoother.setBlocks(&blocks);
+
+        if (args.optionFound("writeStep"))
+        {
+            nWritten += smoother.updateAndWrite
+            (
+                regionName,
+                defaultFacesName,
+                defaultFacesType,
+                runTime
+            );
+        }
+        else
+        {
+            smoother.update();
+
+            // Reset mesh directory to constant/polyMesh !!! Hard to find :P
+            mesh.setInstance(runTime.constant());
+        }
     }
 
-    IOdictionary smootherDict(smootherDictIO);
-    MeshSmoother meshSmoother(&mesh, &smootherDict, &blocks);
-
-    if (args.optionFound("writeStep"))
-    {
-        meshSmoother.updateAndWrite
-        (
-            regionName,
-            defaultFacesName,
-            defaultFacesType,
-            runTime
-        );
-    }
-    else
-    {
-        meshSmoother.update();
-
-        // Reset mesh directory to constant/polyMesh !!! Hard to find :P
-        mesh.setInstance(runTime.constant());
-    }
-
-    // End of smoothing
-    //##########################################################################
 
     // Merge patch pairs (dictionary entry "mergePatchPairs")
     #include "mergePatchPairs.H"
@@ -206,7 +184,7 @@ int main(int argc, char *argv[])
 
     // #########################################################################
 
-    if (!args.optionFound("writeStep"))
+    if (!nWritten)
     {
         mesh.removeFiles();
         if (!mesh.write())

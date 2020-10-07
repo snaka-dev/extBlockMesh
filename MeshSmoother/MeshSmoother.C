@@ -453,9 +453,15 @@ Foam::MeshSmoother::~MeshSmoother()
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
+void Foam::MeshSmoother::setBlocks(blockMesh* blocks)
+{
+    _blocks = blocks;
+}
+
+
 void Foam::MeshSmoother::update()
 {
-    while(runIteration()){}
+    while (runIteration()) {}
 
     // Update the mesh with new points
     _polyMesh->movePoints(getMovedPoints());
@@ -464,69 +470,32 @@ void Foam::MeshSmoother::update()
 }
 
 
-void Foam::MeshSmoother::updateAndWrite
-(
-    word& regionName,
-    word& defaultFacesName,
-    word& defaultFacesType,
-    Time& runTime
-)
+Foam::label Foam::MeshSmoother::updateAndWrite(Time& runTime)
 {
-    #if (OPENFOAM >= 1806)
-    polyMesh meshFv
-    (
-        IOobject(regionName, runTime.constant(), runTime),
-        pointField(_polyMesh->points()),
-        _blocks->cells(),
-        _blocks->patches(),
-        _blocks->patchNames(),
-        _blocks->patchDicts(),
-        defaultFacesName,
-        defaultFacesType
-    );
+    label nWritten = 0;
 
-    polyScalarField meshQuality
-    (
-        IOobject
-        (
-            "meshQuality",
-            runTime.timeName(),
-            meshFv,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        meshFv,
-        0.0
-    );
+    #if (OPENFOAM < 1806)
+
+    this->update();
+
     #else
-    fvMesh meshFv
-    (
-        IOobject(regionName, runTime.constant(), runTime),
-        xferCopy(_polyMesh->points()),
-        _blocks->cells(),
-        _blocks->patches(),
-        _blocks->patchNames(),
-        _blocks->patchDicts(),
-        defaultFacesName,
-        defaultFacesType
-    );
 
-    volScalarField meshQuality
+    qualityFieldType qualityField
     (
         IOobject
         (
             "meshQuality",
             runTime.timeName(),
-            meshFv,
+            *_polyMesh,
             IOobject::NO_READ,
             IOobject::AUTO_WRITE
         ),
-        meshFv,
-        0.0
+        *_polyMesh,
+        scalar(0)
     );
-    #endif
 
-    writeMesh(meshQuality);
+    writeMesh(qualityField);
+    ++nWritten;
 
     while (runIteration())
     {
@@ -534,10 +503,91 @@ void Foam::MeshSmoother::updateAndWrite
         _polyMesh->movePoints(getMovedPoints());
 
         ++runTime;
-        writeMesh(meshQuality);
+        ++nWritten;
+        writeMesh(qualityField);
     }
 
     _param->printStats();
+    #endif
+
+    return nWritten;
+}
+
+
+Foam::label Foam::MeshSmoother::updateAndWrite
+(
+    word& regionName,
+    word& defaultFacesName,
+    word& defaultFacesType,
+    Time& runTime
+)
+{
+    typedef qualityFieldType::Mesh qualityMeshType;
+
+    autoPtr<qualityMeshType> meshPtr;
+    autoPtr<qualityFieldType> fieldPtr;
+
+    if (_blocks)
+    {
+        meshPtr.reset
+        (
+            new qualityMeshType
+            (
+                IOobject(regionName, runTime.constant(), runTime),
+                pointField(_polyMesh->points()),
+                _blocks->cells(),
+                _blocks->patches(),
+                _blocks->patchNames(),
+                _blocks->patchDicts(),
+                defaultFacesName,
+                defaultFacesType
+            )
+        );
+
+        fieldPtr.reset
+        (
+            new qualityFieldType
+            (
+                IOobject
+                (
+                    "meshQuality",
+                    runTime.timeName(),
+                    meshPtr(),
+                    IOobject::NO_READ,
+                    IOobject::AUTO_WRITE
+                ),
+                meshPtr(),
+                scalar(0)
+            )
+        );
+    }
+
+
+    label nWritten = 0;
+
+    if (fieldPtr.valid())
+    {
+        writeMesh(fieldPtr());
+        ++nWritten;
+    }
+
+    while (runIteration())
+    {
+        // Update the mesh with new points
+        _polyMesh->movePoints(getMovedPoints());
+
+        if (fieldPtr.valid())
+        {
+            ++runTime;
+            ++nWritten;
+
+            writeMesh(fieldPtr());
+        }
+    }
+
+    _param->printStats();
+
+    return nWritten;
 }
 
 
