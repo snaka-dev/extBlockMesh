@@ -24,11 +24,9 @@ License
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
-namespace Foam
-{
-    scalar SmootherCell::_transParam = 1.0;
-    SmootherBoundary* SmootherCell::_bnd = NULL;
-}
+Foam::scalar Foam::SmootherCell::_transParam = 1.0;
+Foam::SmootherBoundary* Foam::SmootherCell::_bnd = nullptr;
+
 
 // * * * * * * * * * * * * * * * Private Functions * * * * * * * * * * * * * //
 
@@ -46,41 +44,23 @@ Foam::scalar Foam::SmootherCell::tetCellQuality(const label ref) const
     );
     const scalar sigma(det(mA));
 
-    if (sigma > VSMALL)
+    if (sigma < ROOTVSMALL)
     {
-        // std::pow
-        return 3.0*std::pow(sigma, 2.0/3.0)/magSqr(mA);
-
-        // Faster with fast pow (approx 1/4 less time in mean cycle)
-        // But give inacurracy when mesh is close to orthonormal use with
-        // caution
-// http://martin.ankerl.com/2012/01/25/optimized-approximative-pow-in-c-and-cpp/
-//        return 3.0*fastPow(sigma)/magSqr(mA);
+        return 0;
     }
 
-    return 0.0;
+    // 3 * pow(sigma, 2.0/3.0)/magSqr(mA)
+    return scalar(3) * Foam::cbrt(Foam::sqr(sigma)) / magSqr(mA);
 }
 
-scalar SmootherCell::fastPow(const scalar &s) const
-{
-    union
-    {
-        scalar d;
-        label x[2];
-    } u = {s};
-
-    u.x[1] = static_cast<label>(2.0/3.0*(u.x[1] - 1072632447) + 1072632447);
-    u.x[0] = 0;
-    return u.d;
-}
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::SmootherCell::SmootherCell(const cellShape &cell)
 :
     _cellShape(cell)
-{
-}
+{}
+
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
@@ -91,9 +71,9 @@ void Foam::SmootherCell::computeQuality()
     {
         const scalar tetQuality(tetCellQuality(ptI));
 
-        if (tetQuality < VSMALL)
+        if (tetQuality < ROOTVSMALL)
         {
-            _quality = 0.0;
+            _quality = 0;
             return;
         }
         _quality += tetQuality;
@@ -101,6 +81,7 @@ void Foam::SmootherCell::computeQuality()
 
     _quality /= 8.0;
 }
+
 
 Foam::pointField Foam::SmootherCell::geometricTransform()
 {
@@ -146,8 +127,9 @@ Foam::pointField Foam::SmootherCell::geometricTransform()
     const point c = (H[0] + H[1] + H[2] + H[3] + H[4] + H[5] + H[6] + H[7])/8.0;
     const pointField C(8, c);
 
-    return (C + length*(H - C));
+    return pointField(C + length*(H - C));
 }
+
 
 void Foam::SmootherCell::setStaticItems(SmootherBoundary* bnd, const scalar &t)
 {
@@ -155,6 +137,5 @@ void Foam::SmootherCell::setStaticItems(SmootherBoundary* bnd, const scalar &t)
     _bnd = bnd;
 }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 // ************************************************************************* //

@@ -23,7 +23,13 @@ License
 #ifndef MESHSMOOTHER_H
 #define MESHSMOOTHER_H
 
-#include "fvCFD.H"
+#include "polyMesh.H"
+
+#if (OPENFOAM >= 1806)
+    #include "polyFields.H"
+#else
+    #include "volFields.H"
+#endif
 
 #include <map>
 
@@ -31,9 +37,10 @@ License
 
 namespace Foam
 {
-class SmootherCell;
-class polyMesh;
+
+// Forward Declarations
 class blockMesh;
+class SmootherCell;
 class SmootherControl;
 class SmootherParameter;
 class SmootherBoundary;
@@ -44,7 +51,16 @@ class SmootherBoundary;
 
 class MeshSmoother
 {
-    //- Private data
+    // Typedefs
+
+        #if (OPENFOAM >= 1806)
+        typedef polyScalarField qualityFieldType;
+        #else
+        typedef volScalarField qualityFieldType;
+        #endif
+
+
+    // Private Data
 
         // Pointer of parents
         polyMesh *_polyMesh;
@@ -58,7 +74,8 @@ class MeshSmoother
         // Smoother cell and points
         List<SmootherCell*> _cell;
 
-    //- Private member functions
+
+    // Private Member Functions
 
         // Quality analysis
         void analyseMeshQuality();
@@ -80,8 +97,9 @@ class MeshSmoother
         bool runIteration();
         pointField getMovedPoints() const;
 
-        // Write the mesh and meshQuality
-        void writeMesh(const fvMesh& meshFv, volScalarField &meshQuality) const;
+
+        //- Write the mesh and meshQuality
+        void writeMesh(qualityFieldType& meshQuality) const;
 
         // Smoothing algo
         void GETMeSmoothing();
@@ -96,29 +114,40 @@ public:
         (
             polyMesh *mesh,
             dictionary *smootherDict,
-            blockMesh *blocks = 0
+            blockMesh *blocks = nullptr
         );
+
 
     //- Destructor
     ~MeshSmoother();
 
-    //- Member functions
 
-        // Smooth the mesh acording to smoothDict
+    // Member Functions
+
+        //- Attach blocks to the smoother. A nullptr is allowed
+        void setBlocks(blockMesh* blocks);
+
+        //- Smooth the mesh acording to smoothDict
         void update();
 
-        // Smooth the mesh acording to smoothDict and write intermediate mesh
-        void updateAndWrite
+        //- Smooth the mesh acording to smoothDict and write intermediate mesh
+        //  \return the number of fields written
+        label updateAndWrite(Time& runTime);
+
+        //- Smooth the mesh acording to smoothDict and write intermediate mesh
+        //  \return the number of fields written
+        label updateAndWrite
         (
-            word &regionName,
-            word &defaultFacesName,
-            word &defaultFacesType,
-            Time &runTime
+            word& regionName,
+            word& defaultFacesName,
+            word& defaultFacesType,
+            Time& runTime
         );
 
-        // Get tranformation treshold
+        //- Get tranformation treshold
         scalar getTransformationTreshold() const;
 };
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

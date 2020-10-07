@@ -39,18 +39,14 @@ Foam::SmootherBoundaryLayer::SmootherBoundaryLayer(const dictionary &blDict)
     Info<< "        - Final thickness    : " << _finalLayerThickness << nl;
 }
 
+
 Foam::SmootherBoundaryLayer::SmootherBoundaryLayer()
 :
     _nbLayers(0.0),
     _expansionRatio(1.0),
     _relativeSize(true),
     _finalLayerThickness(1)
-{
+{}
 
-}
-
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 // ************************************************************************* //

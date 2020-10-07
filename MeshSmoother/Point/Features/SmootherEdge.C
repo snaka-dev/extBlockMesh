@@ -21,10 +21,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "SmootherEdge.H"
-
 #include "SmootherBoundary.H"
-
-// * * * * * * * * * * * * * * * Private Functions * * * * * * * * * * * * * //
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -36,8 +33,7 @@ Foam::SmootherEdge::SmootherEdge
 )
 :
     SmootherFeature(ref, featureRef, pt)
-{
-}
+{}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
@@ -47,7 +43,8 @@ void Foam::SmootherEdge::GETMeSmooth()
     _movedPt = _bnd->snapToEdge(_featureRef, _movedPt);
 }
 
-void SmootherEdge::snap()
+
+void Foam::SmootherEdge::snap()
 {
 //    const labelList& pp = _polyMesh->pointPoints(_ptRef);
 //    label nbPt = 0;
@@ -66,7 +63,8 @@ void SmootherEdge::snap()
     _movedPt = _bnd->snapToEdge(_featureRef, _initialPt);
 }
 
-void SmootherEdge::featLaplaceSmooth()
+
+void Foam::SmootherEdge::featLaplaceSmooth()
 {
     const labelList& pp = _polyMesh->pointPoints(_ptRef);
     label nbPt = 0;
@@ -83,6 +81,5 @@ void SmootherEdge::featLaplaceSmooth()
     _movedPt /= nbPt;
 }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 // ************************************************************************* //

@@ -38,8 +38,8 @@ Foam::SmootherSurface::SmootherSurface
 )
 :
     SmootherFeature(ref, featureRef, pt)
-{
-}
+{}
+
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
@@ -49,12 +49,14 @@ void Foam::SmootherSurface::GETMeSmooth()
     _movedPt = _bnd->snapToSurf(_featureRef, _movedPt);
 }
 
-void SmootherSurface::snap()
+
+void Foam::SmootherSurface::snap()
 {
     _movedPt = _bnd->snapToSurf(_featureRef, _initialPt);
 }
 
-void SmootherSurface::featLaplaceSmooth()
+
+void Foam::SmootherSurface::featLaplaceSmooth()
 {
     const labelList& pp = _polyMesh->pointPoints(_ptRef);
     label nbPt = 0;
@@ -70,6 +72,5 @@ void SmootherSurface::featLaplaceSmooth()
     _movedPt /= nbPt;
 }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 // ************************************************************************* //

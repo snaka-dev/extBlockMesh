@@ -44,6 +44,8 @@ License
 
 namespace Foam
 {
+
+// Forward Declarations
 class polyMesh;
 class SmootherPoint;
 

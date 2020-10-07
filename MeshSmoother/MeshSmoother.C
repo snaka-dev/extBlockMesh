@@ -39,7 +39,7 @@ License
 
 // * * * * * * * * * * * * * * * Private Functions * * * * * * * * * * * * * //
 
-void MeshSmoother::analyseMeshQuality()
+void Foam::MeshSmoother::analyseMeshQuality()
 {
     forAll(_cell, cellI)
     {
@@ -255,7 +255,8 @@ bool Foam::MeshSmoother::runIteration()
     return _param->setSmoothCycle(meanQ, minQ, asUnSnaped, this);
 }
 
-pointField MeshSmoother::getMovedPoints() const
+
+Foam::pointField Foam::MeshSmoother::getMovedPoints() const
 {
     pointField pt(_polyMesh->nPoints());
 
@@ -266,12 +267,18 @@ pointField MeshSmoother::getMovedPoints() const
     return pt;
 }
 
+
 void Foam::MeshSmoother::writeMesh
 (
-    const fvMesh& meshFv,
+    #if (OPENFOAM >= 1806)
+    polyScalarField& meshQuality
+    #else
     volScalarField& meshQuality
+    #endif
 ) const
 {
+    const auto& meshFv = meshQuality.mesh();
+
     forAll(meshQuality, cellI)
     {
         meshQuality[cellI] = _cell[cellI]->quality();
@@ -279,20 +286,21 @@ void Foam::MeshSmoother::writeMesh
 
     if (!meshFv.write())
     {
-        FatalErrorIn("Foam::MeshSmoother::writeMesh()")
+        FatalErrorInFunction
             << "Failed writing fvMesh."
             << exit(FatalError);
     }
 
     if (!_polyMesh->write())
     {
-        FatalErrorIn("Foam::MeshSmoother::writeMesh()")
+        FatalErrorInFunction
             << "Failed writing polyMesh."
             << exit(FatalError);
     }
 }
 
-void MeshSmoother::GETMeSmoothing()
+
+void Foam::MeshSmoother::GETMeSmoothing()
 {
     //-------------------------------------------------------------------------
 
@@ -343,7 +351,8 @@ void MeshSmoother::GETMeSmoothing()
 //    _bnd->writeAllSurfaces(_param->getIterNb());
 }
 
-void MeshSmoother::snapSmoothing()
+
+void Foam::MeshSmoother::snapSmoothing()
 {
     // Reset all points
     forAll(_polyMesh->points(), ptI)
@@ -444,9 +453,15 @@ Foam::MeshSmoother::~MeshSmoother()
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
+void Foam::MeshSmoother::setBlocks(blockMesh* blocks)
+{
+    _blocks = blocks;
+}
+
+
 void Foam::MeshSmoother::update()
 {
-    while(runIteration()){}
+    while (runIteration()) {}
 
     // Update the mesh with new points
     _polyMesh->movePoints(getMovedPoints());
@@ -454,7 +469,52 @@ void Foam::MeshSmoother::update()
     _param->printStats();
 }
 
-void Foam::MeshSmoother::updateAndWrite
+
+Foam::label Foam::MeshSmoother::updateAndWrite(Time& runTime)
+{
+    label nWritten = 0;
+
+    #if (OPENFOAM < 1806)
+
+    this->update();
+
+    #else
+
+    qualityFieldType qualityField
+    (
+        IOobject
+        (
+            "meshQuality",
+            runTime.timeName(),
+            *_polyMesh,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        *_polyMesh,
+        scalar(0)
+    );
+
+    writeMesh(qualityField);
+    ++nWritten;
+
+    while (runIteration())
+    {
+        // Update the mesh with new points
+        _polyMesh->movePoints(getMovedPoints());
+
+        ++runTime;
+        ++nWritten;
+        writeMesh(qualityField);
+    }
+
+    _param->printStats();
+    #endif
+
+    return nWritten;
+}
+
+
+Foam::label Foam::MeshSmoother::updateAndWrite
 (
     word& regionName,
     word& defaultFacesName,
@@ -462,45 +522,74 @@ void Foam::MeshSmoother::updateAndWrite
     Time& runTime
 )
 {
-    fvMesh meshFv
-    (
-        IOobject(regionName, runTime.constant(), runTime),
-        xferCopy(_polyMesh->points()),
-        _blocks->cells(),
-        _blocks->patches(),
-        _blocks->patchNames(),
-        _blocks->patchDicts(),
-        defaultFacesName,
-        defaultFacesType
-    );
+    typedef qualityFieldType::Mesh qualityMeshType;
 
-    volScalarField meshQuality
-    (
-        IOobject
+    autoPtr<qualityMeshType> meshPtr;
+    autoPtr<qualityFieldType> fieldPtr;
+
+    if (_blocks)
+    {
+        meshPtr.reset
         (
-            "meshQuality",
-            runTime.timeName(),
-            meshFv,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        meshFv,
-        0.0
-    );
+            new qualityMeshType
+            (
+                IOobject(regionName, runTime.constant(), runTime),
+                pointField(_polyMesh->points()),
+                _blocks->cells(),
+                _blocks->patches(),
+                _blocks->patchNames(),
+                _blocks->patchDicts(),
+                defaultFacesName,
+                defaultFacesType
+            )
+        );
 
-    writeMesh(meshFv, meshQuality);
+        fieldPtr.reset
+        (
+            new qualityFieldType
+            (
+                IOobject
+                (
+                    "meshQuality",
+                    runTime.timeName(),
+                    meshPtr(),
+                    IOobject::NO_READ,
+                    IOobject::AUTO_WRITE
+                ),
+                meshPtr(),
+                scalar(0)
+            )
+        );
+    }
 
-    while(runIteration())
+
+    label nWritten = 0;
+
+    if (fieldPtr.valid())
+    {
+        writeMesh(fieldPtr());
+        ++nWritten;
+    }
+
+    while (runIteration())
     {
         // Update the mesh with new points
         _polyMesh->movePoints(getMovedPoints());
 
-        ++runTime;
-        writeMesh(meshFv, meshQuality);
+        if (fieldPtr.valid())
+        {
+            ++runTime;
+            ++nWritten;
+
+            writeMesh(fieldPtr());
+        }
     }
 
     _param->printStats();
+
+    return nWritten;
 }
+
 
 Foam::scalar Foam::MeshSmoother::getTransformationTreshold() const
 {
@@ -514,6 +603,5 @@ Foam::scalar Foam::MeshSmoother::getTransformationTreshold() const
     return cqs[std::floor(_polyMesh->nCells()*_ctrl->ratioForMin())];
 }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 // ************************************************************************* //

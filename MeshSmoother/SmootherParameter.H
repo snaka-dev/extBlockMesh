@@ -24,13 +24,14 @@ License
 #define MESHSMOOTHERPARAMETER_H
 
 #include "scalarList.H"
-
 #include "SmootherControl.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
+
+// Forward Declarations
 class polyMesh;
 class MeshSmoother;
 

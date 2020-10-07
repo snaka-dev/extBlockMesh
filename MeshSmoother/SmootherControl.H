@@ -29,6 +29,8 @@ License
 
 namespace Foam
 {
+
+// Forward Declarations
 class dictionary;
 
 /*---------------------------------------------------------------------------*\

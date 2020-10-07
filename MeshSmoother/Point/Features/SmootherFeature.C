@@ -22,8 +22,6 @@ License
 
 #include "SmootherFeature.H"
 
-#include "polyMesh.H"
-
 // * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::SmootherFeature::SmootherFeature
@@ -35,12 +33,7 @@ Foam::SmootherFeature::SmootherFeature
 :
     SmootherPoint(ref, pt),
     _featureRef(featureRef)
-{
-}
+{}
 
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 // ************************************************************************* //

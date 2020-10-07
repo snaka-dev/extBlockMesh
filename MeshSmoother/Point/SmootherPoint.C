@@ -29,12 +29,10 @@ License
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
-namespace Foam
-{
-    polyMesh* SmootherPoint::_polyMesh = NULL;
-    SmootherBoundary* SmootherPoint::_bnd = NULL;
-    SmootherParameter* SmootherPoint::_param = NULL;
-}
+Foam::polyMesh* Foam::SmootherPoint::_polyMesh = nullptr;
+Foam::SmootherBoundary* Foam::SmootherPoint::_bnd = nullptr;
+Foam::SmootherParameter* Foam::SmootherPoint::_param = nullptr;
+
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -63,7 +61,7 @@ void Foam::SmootherPoint::setStaticItems
     _polyMesh = mesh;
 }
 
-void SmootherPoint::laplaceSmooth()
+void Foam::SmootherPoint::laplaceSmooth()
 {
     const labelList& pp = _polyMesh->pointPoints(_ptRef);
     _movedPt = point(0.0, 0.0, 0.0);
@@ -74,6 +72,5 @@ void SmootherPoint::laplaceSmooth()
     _movedPt /= pp.size();
 }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 // ************************************************************************* //
