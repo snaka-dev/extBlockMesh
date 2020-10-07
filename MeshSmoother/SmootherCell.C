@@ -27,27 +27,6 @@ License
 Foam::scalar Foam::SmootherCell::_transParam = 1.0;
 Foam::SmootherBoundary* Foam::SmootherCell::_bnd = nullptr;
 
-// * * * * * * * * * * * * * * * Local Functions * * * * * * * * * * * * * * //
-
-#ifdef USE_FASTPOW
-// http://martin.ankerl.com/2012/01/25/optimized-approximative-pow-in-c-and-cpp/
-namespace Foam
-{
-    static inline scalar fastPow(const scalar val)
-    {
-        union
-        {
-            scalar d;
-            label x[2];
-        } u = {val};
-
-        u.x[1] = static_cast<label>(2.0/3.0*(u.x[1] - 1072632447) + 1072632447);
-        u.x[0] = 0;
-        return u.d;
-    }
-}
-#endif
-
 
 // * * * * * * * * * * * * * * * Private Functions * * * * * * * * * * * * * //
 
@@ -65,19 +44,13 @@ Foam::scalar Foam::SmootherCell::tetCellQuality(const label ref) const
     );
     const scalar sigma(det(mA));
 
-    if (sigma > VSMALL)
+    if (sigma < ROOTVSMALL)
     {
-        // Faster with fast pow (approx 1/4 less time in mean cycle)
-        // But give inacurracy when mesh is close to orthonormal use with
-        // caution
-        #ifdef USE_FASTPOW
-        return 3.0*fastPow(sigma)/magSqr(mA);
-        #else
-        return 3.0*std::pow(sigma, 2.0/3.0)/magSqr(mA);
-        #endif
+        return 0;
     }
 
-    return 0.0;
+    // 3 * pow(sigma, 2.0/3.0)/magSqr(mA)
+    return scalar(3) * Foam::cbrt(Foam::sqr(sigma)) / magSqr(mA);
 }
 
 
@@ -98,9 +71,9 @@ void Foam::SmootherCell::computeQuality()
     {
         const scalar tetQuality(tetCellQuality(ptI));
 
-        if (tetQuality < VSMALL)
+        if (tetQuality < ROOTVSMALL)
         {
-            _quality = 0.0;
+            _quality = 0;
             return;
         }
         _quality += tetQuality;
@@ -108,6 +81,7 @@ void Foam::SmootherCell::computeQuality()
 
     _quality /= 8.0;
 }
+
 
 Foam::pointField Foam::SmootherCell::geometricTransform()
 {
