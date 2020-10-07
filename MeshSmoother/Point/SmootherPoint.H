@@ -36,11 +36,9 @@ namespace Foam
 
 class SmootherPoint
 {
-    //- Private data
-
 protected:
 
-    //- Protected data
+    // Protected data
 
         // Pointers
         static polyMesh* _polyMesh;

@@ -39,7 +39,7 @@ License
 
 // * * * * * * * * * * * * * * * Private Functions * * * * * * * * * * * * * //
 
-void MeshSmoother::analyseMeshQuality()
+void Foam::MeshSmoother::analyseMeshQuality()
 {
     forAll(_cell, cellI)
     {
@@ -255,7 +255,8 @@ bool Foam::MeshSmoother::runIteration()
     return _param->setSmoothCycle(meanQ, minQ, asUnSnaped, this);
 }
 
-pointField MeshSmoother::getMovedPoints() const
+
+Foam::pointField Foam::MeshSmoother::getMovedPoints() const
 {
     pointField pt(_polyMesh->nPoints());
 
@@ -299,7 +300,7 @@ void Foam::MeshSmoother::writeMesh
 }
 
 
-void MeshSmoother::GETMeSmoothing()
+void Foam::MeshSmoother::GETMeSmoothing()
 {
     //-------------------------------------------------------------------------
 
@@ -350,7 +351,8 @@ void MeshSmoother::GETMeSmoothing()
 //    _bnd->writeAllSurfaces(_param->getIterNb());
 }
 
-void MeshSmoother::snapSmoothing()
+
+void Foam::MeshSmoother::snapSmoothing()
 {
     // Reset all points
     forAll(_polyMesh->points(), ptI)

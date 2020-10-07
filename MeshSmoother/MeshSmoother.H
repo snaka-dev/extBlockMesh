@@ -23,20 +23,24 @@ License
 #ifndef MESHSMOOTHER_H
 #define MESHSMOOTHER_H
 
-#include "fvCFD.H"
-#include <map>
+#include "polyMesh.H"
+#include "blockMesh.H"
 
 #if (OPENFOAM >= 1806)
-#include "polyFields.H"
+    #include "polyFields.H"
+#else
+    #include "volFields.H"
 #endif
+
+#include <map>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
+
+// Forward Declarations
 class SmootherCell;
-class polyMesh;
-class blockMesh;
 class SmootherControl;
 class SmootherParameter;
 class SmootherBoundary;
@@ -47,7 +51,7 @@ class SmootherBoundary;
 
 class MeshSmoother
 {
-    //- Private data
+    // Private Data
 
         // Pointer of parents
         polyMesh *_polyMesh;
@@ -61,7 +65,8 @@ class MeshSmoother
         // Smoother cell and points
         List<SmootherCell*> _cell;
 
-    //- Private member functions
+
+    // Private Member Functions
 
         // Quality analysis
         void analyseMeshQuality();
@@ -84,13 +89,15 @@ class MeshSmoother
         pointField getMovedPoints() const;
 
 
-        #if (OPENFOAM >= 1806)
-        // Write the mesh and meshQuality
-        void writeMesh(polyScalarField& meshQuality) const;
-        #else
-        // Write the mesh and meshQuality
-        void writeMesh(volScalarField& meshQuality) const;
-        #endif
+        //- Write the mesh and meshQuality
+        void writeMesh
+        (
+            #if (OPENFOAM >= 1806)
+            polyScalarField& meshQuality
+            #else
+            volScalarField& meshQuality
+            #endif
+        ) const;
 
         // Smoothing algo
         void GETMeSmoothing();
@@ -113,12 +120,12 @@ public:
     ~MeshSmoother();
 
 
-    //- Member functions
+    // Member Functions
 
-        // Smooth the mesh acording to smoothDict
+        //- Smooth the mesh acording to smoothDict
         void update();
 
-        // Smooth the mesh acording to smoothDict and write intermediate mesh
+        //- Smooth the mesh acording to smoothDict and write intermediate mesh
         void updateAndWrite
         (
             word &regionName,
@@ -127,9 +134,10 @@ public:
             Time &runTime
         );
 
-        // Get tranformation treshold
+        //- Get tranformation treshold
         scalar getTransformationTreshold() const;
 };
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

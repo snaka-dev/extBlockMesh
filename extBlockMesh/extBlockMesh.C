@@ -66,12 +66,15 @@ License
     along with extBlockMesh.  If not, see <http://www.gnu.org/licenses/>.
 
 \*---------------------------------------------------------------------------*/
+
 #include "Time.H"
 #include "IOdictionary.H"
 #include "IOPtrList.H"
 
+#include "blockMesh.H"
 #include "attachPolyTopoChanger.H"
 #include "emptyPolyPatch.H"
+
 #include "cellSet.H"
 
 #include "argList.H"
@@ -80,16 +83,8 @@ License
 
 #include "Pair.H"
 #include "slidingInterface.H"
-#include "blockMesh.H"
 
-// -- Added from OpenFOAM
-#include "lineEdge.H"
-#include "IOmanip.H"
-#include <ios>
-
-// -- Created class
 #include "MeshSmoother.H"
-//-----------------------------------------
 
 using namespace Foam;
 

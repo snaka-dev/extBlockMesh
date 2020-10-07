@@ -1,6 +1,9 @@
 sinclude $(GENERAL_RULES)/module-path-user
 
 /* Failsafe - user location */
+ifeq (,$(strip $(FOAM_MODULE_APPBIN)))
+    FOAM_MODULE_APPBIN = $(FOAM_USER_APPBIN)
+endif
 ifeq (,$(strip $(FOAM_MODULE_LIBBIN)))
     FOAM_MODULE_LIBBIN = $(FOAM_USER_LIBBIN)
 endif
@@ -19,7 +22,7 @@ EXE_LIBS = \
     -lmeshTools \
     -lsurfMesh \
     -ldynamicMesh \
-    -L$(FOAM_USER_LIBBIN) \
+    -L$(FOAM_MODULE_LIBBIN) \
     -lMeshSmoother
 
 /* OpenFOAM-v1806 and later: no separate triSurface */

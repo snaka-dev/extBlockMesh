@@ -24,11 +24,30 @@ License
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
+Foam::scalar Foam::SmootherCell::_transParam = 1.0;
+Foam::SmootherBoundary* Foam::SmootherCell::_bnd = nullptr;
+
+// * * * * * * * * * * * * * * * Local Functions * * * * * * * * * * * * * * //
+
+#ifdef USE_FASTPOW
+// http://martin.ankerl.com/2012/01/25/optimized-approximative-pow-in-c-and-cpp/
 namespace Foam
 {
-    scalar SmootherCell::_transParam = 1.0;
-    SmootherBoundary* SmootherCell::_bnd = NULL;
+    static inline scalar fastPow(const scalar val)
+    {
+        union
+        {
+            scalar d;
+            label x[2];
+        } u = {val};
+
+        u.x[1] = static_cast<label>(2.0/3.0*(u.x[1] - 1072632447) + 1072632447);
+        u.x[0] = 0;
+        return u.d;
+    }
 }
+#endif
+
 
 // * * * * * * * * * * * * * * * Private Functions * * * * * * * * * * * * * //
 
@@ -48,31 +67,17 @@ Foam::scalar Foam::SmootherCell::tetCellQuality(const label ref) const
 
     if (sigma > VSMALL)
     {
-        // std::pow
-        return 3.0*std::pow(sigma, 2.0/3.0)/magSqr(mA);
-
         // Faster with fast pow (approx 1/4 less time in mean cycle)
         // But give inacurracy when mesh is close to orthonormal use with
         // caution
-// http://martin.ankerl.com/2012/01/25/optimized-approximative-pow-in-c-and-cpp/
-//        return 3.0*fastPow(sigma)/magSqr(mA);
+        #ifdef USE_FASTPOW
+        return 3.0*fastPow(sigma)/magSqr(mA);
+        #else
+        return 3.0*std::pow(sigma, 2.0/3.0)/magSqr(mA);
+        #endif
     }
 
     return 0.0;
-}
-
-
-scalar SmootherCell::fastPow(const scalar &s) const
-{
-    union
-    {
-        scalar d;
-        label x[2];
-    } u = {s};
-
-    u.x[1] = static_cast<label>(2.0/3.0*(u.x[1] - 1072632447) + 1072632447);
-    u.x[0] = 0;
-    return u.d;
 }
 
 
@@ -81,8 +86,8 @@ scalar SmootherCell::fastPow(const scalar &s) const
 Foam::SmootherCell::SmootherCell(const cellShape &cell)
 :
     _cellShape(cell)
-{
-}
+{}
+
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 

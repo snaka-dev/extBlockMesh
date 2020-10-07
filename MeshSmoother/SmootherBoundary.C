@@ -138,7 +138,8 @@ void Foam::SmootherBoundary::analyseDict(dictionary &snapDict)
     Info<< nl;
 }
 
-labelList Foam::SmootherBoundary::analyseFeatures
+
+Foam::labelList Foam::SmootherBoundary::analyseFeatures
 (
     List<labelHashSet> &pp,
     std::set<std::set<label> >& fP
@@ -558,7 +559,7 @@ Foam::SmootherBoundary::~SmootherBoundary()
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void SmootherBoundary::writeFeatures
+void Foam::SmootherBoundary::writeFeatures
 (
     labelList &pointType,
     List<labelHashSet> &pp,
@@ -742,12 +743,14 @@ void SmootherBoundary::writeFeatures
     iOut.close();
 }
 
+
 void Foam::SmootherBoundary::removeSnapPoint(const label ref)
 {
     _unsnapedPoint.erase(ref);
 }
 
-void SmootherBoundary::writeAllSurfaces(const label iterRef) const
+
+void Foam::SmootherBoundary::writeAllSurfaces(const label iterRef) const
 {
     forAll(_triSurfSearchList, surfI)
     {
@@ -757,9 +760,7 @@ void SmootherBoundary::writeAllSurfaces(const label iterRef) const
             << ".obj";
         _triSurfSearchList[surfI]->surface().write(oss.str());
     }
-
 }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 // ************************************************************************* //

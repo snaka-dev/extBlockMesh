@@ -27,13 +27,7 @@ License
 Foam::SmootherVertex::SmootherVertex(const label ref, const point& pt)
 :
     SmootherPoint(ref, pt)
-{
-}
+{}
 
-
-
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 // ************************************************************************* //

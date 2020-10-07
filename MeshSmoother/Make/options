@@ -6,23 +6,20 @@ ifeq (,$(strip $(FOAM_MODULE_APPBIN)))
 endif
 
 EXE_INC = \
-    -I$(LIB_SRC)/mesh/blockMesh/lnInclude \
-    -I$(LIB_SRC)/meshTools/lnInclude \
-    -I$(LIB_SRC)/dynamicMesh/lnInclude \
     -I$(LIB_SRC)/fileFormats/lnInclude \
     -I$(LIB_SRC)/surfMesh/lnInclude \
-    -I$(LIB_SRC)/finiteVolume/lnInclude
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/mesh/blockMesh/lnInclude
 
 LIB_LIBS = \
-    -lblockMesh \
-    -lmeshTools \
+    -lfileFormats \
     -lsurfMesh \
-    -lfiniteVolume \
-    -ldynamicMesh
+    -lmeshTools \
+    -lblockMesh
 
-/* OpenFOAM-v1806 and later: no separate triSurface */
+/* OpenFOAM-v1806: separate triSurface, no polyFields */
 #if (OPENFOAM < 1806)
-EXE_INC += -I$(LIB_SRC)/edgeMesh/lnInclude -I$(LIB_SRC)/triSurface/lnInclude
+EXE_INC += -I$(LIB_SRC)/finiteVolume/lnInclude -I$(LIB_SRC)/triSurface/lnInclude
 
-EXE_LIBS += -ledgeMesh
+EXE_LIBS += -lfiniteVolume -ledgeMesh
 #endif

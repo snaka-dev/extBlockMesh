@@ -20,30 +20,12 @@ License
 
 \*---------------------------------------------------------------------------*/
 
+#include "argList.H"
 #include "Time.H"
 #include "IOdictionary.H"
-#include "IOPtrList.H"
+#include "columnFvMesh.H"
 
-#include "attachPolyTopoChanger.H"
-#include "emptyPolyPatch.H"
-#include "cellSet.H"
-
-#include "argList.H"
-#include "OSspecific.H"
-#include "OFstream.H"
-
-#include "Pair.H"
-#include "slidingInterface.H"
-#include "blockMesh.H"
-
-// -- Added from OpenFOAM
-#include "lineEdge.H"
-#include "IOmanip.H"
-#include <ios>
-
-// -- Created class
 #include "MeshSmoother.H"
-//-----------------------------------------
 
 using namespace Foam;
 
@@ -53,10 +35,10 @@ int main(int argc, char *argv[])
 {
     argList::noParallel();
 
-#   include "addRegionOption.H"
-#   include "setRootCase.H"
-#   include "createTime.H"
-#   include "createMesh.H"
+    #include "addRegionOption.H"
+    #include "setRootCase.H"
+    #include "createTime.H"
+    #include "createMesh.H"
 
     Info<< nl << "Initialize smoother algorithm" << nl;
 
@@ -100,6 +82,10 @@ int main(int argc, char *argv[])
         // Reset mesh directory to constant/polyMesh !!! Hard to find :P
         mesh.setInstance(runTime.constant());
     }
+
+    // End of smoothing
+    //##########################################################################
+
 
     // Set the precision of the points data to 10
     IOstream::defaultPrecision(max(10u, IOstream::defaultPrecision()));
@@ -155,4 +141,3 @@ int main(int argc, char *argv[])
 
 
 // ************************************************************************* //
-

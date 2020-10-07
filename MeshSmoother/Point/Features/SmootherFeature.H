@@ -24,7 +24,6 @@ License
 #define MESHSMOOTHERPOINTFEATURE_H
 
 #include "SmootherPoint.H"
-
 #include "SmootherBoundary.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -40,16 +39,14 @@ class SmootherFeature
 :
     public SmootherPoint
 {
-    //- Private data
-
 protected:
 
-    //- Protected data
+    // Protected data
 
-        // Feature ref
+        //- Feature ref
         label _featureRef;
 
-        // Snaped point
+        //- Snapped point
         point _snapPoint;
 
 public:
