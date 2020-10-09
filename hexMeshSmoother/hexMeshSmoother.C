@@ -1,6 +1,7 @@
 /*---------------------------------------------------------------------------*\
   extBlockMesh
   Copyright (C) 2014 Etudes-NG
+  Copyright (C) 2020 OpenCFD Ltd.
   ---------------------------------
 License
     This file is part of extBlockMesh.
@@ -23,7 +24,12 @@ License
 #include "argList.H"
 #include "Time.H"
 #include "IOdictionary.H"
-#include "columnFvMesh.H"
+
+#if (OPENFOAM < 1806)
+    #include "fvMesh.H"
+#else
+    #include "columnFvMesh.H"
+#endif
 
 #include "MeshSmoother.H"
 
@@ -36,8 +42,13 @@ int main(int argc, char *argv[])
     argList::noParallel();
     argList::addBoolOption
     (
-        "writeStep",
-        "write mesh at different smoothing step"
+        "writeSteps",
+        "Write mesh at different smoothing steps"
+    );
+    argList::addBoolOption
+    (
+        "write-quality",
+        "Write mesh and quality field at different smoothing steps."
     );
 
     #include "addRegionOption.H"
@@ -45,14 +56,21 @@ int main(int argc, char *argv[])
     #include "createTime.H"
     #include "createMesh.H"
 
+    // Set the precision of the points data to 10
+    IOstream::defaultPrecision(max(10u, IOstream::defaultPrecision()));
+
     // Smoothing
+    const bool withQuality = args.optionFound("write-quality");
+    const bool writeSteps = args.optionFound("writeSteps");
+
+    label nWritten = 0;
     {
         #include "createSmoother.H"
         MeshSmoother& smoother = smootherPtr();
 
-        if (args.optionFound("writeStep"))
+        if (writeSteps || withQuality)
         {
-            smoother.updateAndWrite(runTime);
+            nWritten += smoother.updateAndWrite(runTime, withQuality);
         }
         else
         {
@@ -63,13 +81,9 @@ int main(int argc, char *argv[])
         }
     }
 
-
-    // Set the precision of the points data to 10
-    IOstream::defaultPrecision(max(10u, IOstream::defaultPrecision()));
-
     Info<< nl << "Writing polyMesh" << endl;
 
-    if (!args.optionFound("writeStep"))
+    if (!nWritten)
     {
         mesh.removeFiles();
         if (!mesh.write())

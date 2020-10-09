@@ -2,8 +2,12 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2011-2013 OpenFOAM Foundation
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2013 OpenFOAM Foundation
+    Copyright (C) 2014 Etudes-NG
+    Copyright (C) 2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -95,8 +99,13 @@ int main(int argc, char *argv[])
     argList::noParallel();
     argList::addBoolOption
     (
-        "writeStep",
-        "write mesh at different smoothing step"
+        "writeSteps",
+        "Write mesh at different smoothing steps"
+    );
+    argList::addBoolOption
+    (
+        "write-quality",
+        "Write mesh and quality field at different smoothing steps"
     );
     argList::addOption("dict", "file", "Alternative blockMeshDict");
 
@@ -120,45 +129,52 @@ int main(int argc, char *argv[])
     blockMesh blocks(meshDict, regionName);
     blocks.verbose(false);
 
-    word defaultFacesName = "defaultFaces";
-    word defaultFacesType = emptyPolyPatch::typeName;
+    // Set the precision of the points data to 10
+    IOstream::defaultPrecision(max(10u, IOstream::defaultPrecision()));
 
+    #if (OPENFOAM > 2006)
+    const word meshInstance = runTime.constant();
+
+    // Ensure we get information messages, even if turned off in dictionary
+    blocks.verbose(true);
+
+    autoPtr<polyMesh> meshPtr =
+        blocks.mesh(IOobject(regionName, meshInstance, runTime));
+
+    polyMesh& mesh = *meshPtr;
+    #else
     Info<< nl << "Creating polyMesh from blockMesh" << endl;
 
     polyMesh mesh
     (
-        IOobject
-        (
-            regionName,
-            runTime.constant(),
-            runTime
-        ),
+        IOobject(regionName, runTime.constant(), runTime),
+        #if (OPENFOAM >= 1806)
         pointField(blocks.points()),
+        #else
+        xferCopy<pointField>(blocks.points()),
+        #endif
         blocks.cells(),
         blocks.patches(),
         blocks.patchNames(),
         blocks.patchDicts(),
-        defaultFacesName,
-        defaultFacesType
+        "defaultFaces",             // defaultFacesName,
+        emptyPolyPatch::typeName    // defaultFacesType
     );
+    #endif
 
 
     // Smoothing
+    const bool withQuality = args.optionFound("write-quality");
+    const bool writeSteps = args.optionFound("writeSteps");
+
     label nWritten = 0;
     {
         #include "createSmoother.H"
         MeshSmoother& smoother = smootherPtr();
-        smoother.setBlocks(&blocks);
 
-        if (args.optionFound("writeStep"))
+        if (writeSteps || withQuality)
         {
-            nWritten += smoother.updateAndWrite
-            (
-                regionName,
-                defaultFacesName,
-                defaultFacesType,
-                runTime
-            );
+            nWritten += smoother.updateAndWrite(runTime, withQuality);
         }
         else
         {
@@ -176,16 +192,12 @@ int main(int argc, char *argv[])
     // Set any cellZones
     #include "addCellZones.H"
 
-
-    // Set the precision of the points data to 10
-    IOstream::defaultPrecision(max(10u, IOstream::defaultPrecision()));
-
-    Info<< nl << "Writing polyMesh" << endl;
-
     // #########################################################################
 
     if (!nWritten)
     {
+        Info<< nl << "Writing polyMesh" << endl;
+
         mesh.removeFiles();
         if (!mesh.write())
         {

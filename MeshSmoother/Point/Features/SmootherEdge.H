@@ -38,13 +38,14 @@ class SmootherEdge
 :
     public SmootherFeature
 {
-
 public:
+
     SmootherEdge(const label ref, const label featureRef, const point &pt);
 
     void GETMeSmooth();
     void snap();
     void featLaplaceSmooth();
+
     bool isEdge() const {return true;}
     bool isSurface() const {return true;}
 };

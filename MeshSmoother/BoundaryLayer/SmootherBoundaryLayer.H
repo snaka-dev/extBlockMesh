@@ -36,26 +36,34 @@ namespace Foam
 
 class SmootherBoundaryLayer
 {
-    //- Private data
+    // Private Data
 
-        // Number of boundary layers
+        //- Number of boundary layers
         label _nbLayers;
 
-        // Expansion ratio
+        //- Expansion ratio
         scalar _expansionRatio;
 
-        // Relative size
-        bool _relativeSize;
-
-        // Wanted thickness of final added cell layer. If multiple
-        // layers is the thickness of the layer furthest away from the
-        // wall. Relative to undistorted size of cell outside layer.
+        //- Wanted thickness of final added cell layer.
+        // If multiple layers is the thickness of the layer furthest
+        // away from the wall.
+        // Relative to undistorted size of cell outside layer.
         scalar _finalLayerThickness;
 
+        //- Use relative size
+        bool _relativeSize;
+
 public:
-    SmootherBoundaryLayer(const dictionary &blDict);
-    SmootherBoundaryLayer();
+
+    // Constructors
+
+        //- Default construct
+        SmootherBoundaryLayer();
+
+        //- Construct from dictionary
+        explicit SmootherBoundaryLayer(const dictionary &blDict);
 };
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

@@ -39,11 +39,13 @@ class SmootherSurface
     public SmootherFeature
 {
 public:
+
     SmootherSurface(const label ref, const label featureRef, const point &pt);
 
     void GETMeSmooth();
     void snap();
     void featLaplaceSmooth();
+
     bool isSurface() const {return true;}
 };
 

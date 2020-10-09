@@ -21,12 +21,8 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "SmootherSurface.H"
-
-#include "polyMesh.H"
-
 #include "SmootherBoundary.H"
-
-// * * * * * * * * * * * * * * * Private Functions * * * * * * * * * * * * * //
+#include "polyMesh.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 

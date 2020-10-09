@@ -41,7 +41,7 @@ class MeshSmoother;
 
 class SmootherParameter
 {
-    //- Private data
+    // Private Data
 
         // Enum iteration type
         enum cycleStatus
@@ -71,12 +71,14 @@ class SmootherParameter
         scalar _meanQuality;
 
 public:
-    //- Constructors
 
-        //- Construct from polyMesh and dictionary
+    // Constructors
+
+        //- Construct from control and polyMesh
         SmootherParameter(SmootherControl *control, polyMesh* poly);
 
-    //- Member functions
+
+    // Member functions
 
         // Print
         void printHeaders() const;

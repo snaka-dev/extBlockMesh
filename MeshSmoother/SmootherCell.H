@@ -1,6 +1,7 @@
 /*---------------------------------------------------------------------------*\
   extBlockMesh
   Copyright (C) 2014 Etudes-NG
+  Copyright (C) 2020 OpenCFD Ltd.
   ---------------------------------
 License
     This file is part of extBlockMesh.
@@ -40,22 +41,25 @@ namespace Foam
 
 class SmootherCell
 {
+    // Static Data
 
-    //- Private data
-
-        // Pointer of smoother boundary
+        // Pointer to smoother boundary
         static SmootherBoundary* _bnd;
 
         // Transformation parameter
         static scalar _transParam;
 
-        // Cell quality (mean ratio)
-        scalar _quality;
+
+    // Private Data
 
         // Reference of cell shape
         const cellShape& _cellShape;
 
-    //- Private member functions
+        //- Cell quality (mean ratio)
+        scalar _quality;
+
+
+    // Private Member Functions
 
         // Tetrahedral quality computation
         scalar tetCellQuality(const label ref) const;
@@ -70,20 +74,31 @@ public:
     //- Constructors
 
         //- Construct from cellShape
-        SmootherCell(const cellShape& cell);
+        explicit SmootherCell(const cellShape& shape);
 
 
-    //- Member functions
+    //- Destructor
+    ~SmootherCell() = default;
 
-        // Set/get cell quality
-        const scalar& quality() const{return _quality;}
+
+    // Member Functions
+
+        // Set static values
+        static void setStaticItems(SmootherBoundary* bnd, const scalar t);
+
+        // Copy clone
+        autoPtr<SmootherCell> clone() const
+        {
+            return autoPtr<SmootherCell>(new SmootherCell(*this));
+        }
+
+        // The cell quality
+        constexpr scalar quality() const noexcept { return _quality; }
+
         void computeQuality();
 
         // Transform cell
         pointField geometricTransform();
-
-        // Set/get polyMesh
-        void setStaticItems(SmootherBoundary *bnd, const scalar& t);
 };
 
 const point &SmootherCell::initPt(const label p) const

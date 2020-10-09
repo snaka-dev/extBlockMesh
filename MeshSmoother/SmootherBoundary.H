@@ -71,6 +71,9 @@ class SmootherBoundary
         // Pointer to polyMesh
         polyMesh* _polyMesh;
 
+        // Point as SmootherPoints
+        List<SmootherPoint*> _point;
+
         // Searchable surfaces list
         List<triSurface*> _triSurfList;
         List<triSurfaceSearch*> _triSurfSearchList;
@@ -88,9 +91,6 @@ class SmootherBoundary
         std::map<label, label> _pointFeature;
         std::map<label, labelHashSet> _pointFeatureSet;
 
-        // Point as SmootherPoints
-        List<SmootherPoint*> _point;
-
         // Hash set of specific points
         labelHashSet _unsnapedPoint;
         labelHashSet _featuresPoint;
@@ -102,9 +102,10 @@ class SmootherBoundary
         label _minEdgeForFeature;
         bool _writeFeatures;
 
-    //- Private member functions
 
-        void analyseDict(dictionary &snapDict);
+    // Private Member Functions
+
+        void analyseDict(const dictionary& snapDict);
 
         labelList analyseFeatures
         (
@@ -139,12 +140,14 @@ public:
 
     //- Constructors
 
-        SmootherBoundary(dictionary& snapDict, polyMesh* mesh);
+        SmootherBoundary(const dictionary& snapDict, polyMesh* mesh);
+
 
     //- Destructor
     ~SmootherBoundary();
 
-    //- Member functions
+
+    // Member Functions
 
         // Get snaped point
         inline point snapToSurf(const label r, const point &pt) const;
@@ -169,6 +172,7 @@ public:
 
         void writeAllSurfaces(const label iterRef) const;
 };
+
 
 point SmootherBoundary::snapToSurf(const label r, const point &pt) const
 {

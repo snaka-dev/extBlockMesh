@@ -26,19 +26,34 @@ License
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::SmootherControl::SmootherControl(dictionary *smootherDict)
+Foam::SmootherControl::SmootherControl
+(
+    const dictionary& smootherDict,
+    const word& subDictName
+)
 {
     // Get smoother parameters
-    const dictionary& smoothDic = smootherDict->subDict("smoothControls");
+    const dictionary& ctrls = smootherDict.subDict(subDictName);
 
-    smoothDic.readEntry("maxIterations", _maxIterations);
-    smoothDic.readEntry("transformParameter", _transformParam);
-    smoothDic.readEntry("meanImprovTol", _meanImprovTol);
-    smoothDic.readEntry("maxMinCycleNoChange", _maxMinCycleNoChange);
-    smoothDic.readEntry("meanRelaxationTable", _meanRelaxTable);
-    smoothDic.readEntry("minRelaxationTable", _minRelaxTable);
-    smoothDic.readEntry("snapRelaxationTable", _snapRelaxTable);
-    smoothDic.readEntry("ratioWorstQualityForMin", _ratioForMin);
+    #if (OPENFOAM >= 1812)
+    ctrls.readEntry("maxIterations", _maxIterations);
+    ctrls.readEntry("transformParameter", _transformParam);
+    ctrls.readEntry("meanImprovTol", _meanImprovTol);
+    ctrls.readEntry("maxMinCycleNoChange", _maxMinCycleNoChange);
+    ctrls.readEntry("meanRelaxationTable", _meanRelaxTable);
+    ctrls.readEntry("minRelaxationTable", _minRelaxTable);
+    ctrls.readEntry("snapRelaxationTable", _snapRelaxTable);
+    ctrls.readEntry("ratioWorstQualityForMin", _ratioForMin);
+    #else
+    ctrls.lookup("maxIterations") >> _maxIterations;
+    ctrls.lookup("transformParameter") >> _transformParam;
+    ctrls.lookup("meanImprovTol") >> _meanImprovTol;
+    ctrls.lookup("maxMinCycleNoChange") >> _maxMinCycleNoChange;
+    ctrls.lookup("meanRelaxationTable") >> _meanRelaxTable;
+    ctrls.lookup("minRelaxationTable") >> _minRelaxTable;
+    ctrls.lookup("snapRelaxationTable") >> _snapRelaxTable;
+    ctrls.lookup("ratioWorstQualityForMin") >> _ratioForMin;
+    #endif
 
     if (_meanRelaxTable.last() > VSMALL)
     {

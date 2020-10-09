@@ -28,6 +28,15 @@ Foam::scalar Foam::SmootherCell::_transParam = 1.0;
 Foam::SmootherBoundary* Foam::SmootherCell::_bnd = nullptr;
 
 
+// * * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * //
+
+void Foam::SmootherCell::setStaticItems(SmootherBoundary* bnd, const scalar t)
+{
+    _transParam = t;
+    _bnd = bnd;
+}
+
+
 // * * * * * * * * * * * * * * * Private Functions * * * * * * * * * * * * * //
 
 Foam::scalar Foam::SmootherCell::tetCellQuality(const label ref) const
@@ -56,9 +65,10 @@ Foam::scalar Foam::SmootherCell::tetCellQuality(const label ref) const
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::SmootherCell::SmootherCell(const cellShape &cell)
+Foam::SmootherCell::SmootherCell(const cellShape& shape)
 :
-    _cellShape(cell)
+    _cellShape(shape),
+    _quality(0)
 {}
 
 
@@ -66,7 +76,8 @@ Foam::SmootherCell::SmootherCell(const cellShape &cell)
 
 void Foam::SmootherCell::computeQuality()
 {
-    _quality = 0.0;
+    _quality = 0;
+
     forAll(_cellShape, ptI)
     {
         const scalar tetQuality(tetCellQuality(ptI));
@@ -128,13 +139,6 @@ Foam::pointField Foam::SmootherCell::geometricTransform()
     const pointField C(8, c);
 
     return pointField(C + length*(H - C));
-}
-
-
-void Foam::SmootherCell::setStaticItems(SmootherBoundary* bnd, const scalar &t)
-{
-    _transParam = t;
-    _bnd = bnd;
 }
 
 

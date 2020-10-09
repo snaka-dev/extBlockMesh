@@ -38,12 +38,14 @@ class SmootherPoint
 {
 protected:
 
-    // Protected data
+    // Static Data
 
         // Pointers
         static polyMesh* _polyMesh;
         static SmootherBoundary* _bnd;
         static SmootherParameter* _param;
+
+    // Protected data
 
         // Point storage
         point _initialPt; // Point before iteration
@@ -61,24 +63,27 @@ protected:
         label _ptRef;
 
 public:
+
     //- Constructors
+
+        //- Default construct
+        SmootherPoint();
 
         //- Construct from point ref
         SmootherPoint(const label ref, const point& pt);
 
-        // Empty constructor
-        SmootherPoint();
 
     //- Destructor
-    virtual ~SmootherPoint() {}
+    virtual ~SmootherPoint() = default;
 
-    //- Member functions
+
+    // Member Functions
 
         // Set boundary and control ref
-        void setStaticItems
+        static void setStaticItems
         (
-            SmootherBoundary *bnd,
-            SmootherParameter *param,
+            SmootherBoundary* bnd,
+            SmootherParameter* param,
             polyMesh* mesh
         );
 

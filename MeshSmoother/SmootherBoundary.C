@@ -36,12 +36,19 @@ License
 
 // * * * * * * * * * * * * * * * Private Functions * * * * * * * * * * * * * //
 
-void Foam::SmootherBoundary::analyseDict(dictionary &snapDict)
+void Foam::SmootherBoundary::analyseDict(const dictionary& snapDict)
 {
-    _featureAngle = readScalar(snapDict.lookup("featureAngle"));
-    _minEdgeForFeature = readLabel(snapDict.lookup("minEdgeForFeature"));
-    _minFeatureEdgeLength = readScalar(snapDict.lookup("minFeatureEdgeLength"));
-    _writeFeatures = readBool(snapDict.lookup("writeFeatures"));
+    #if (OPENFOAM >= 1812)
+    snapDict.readEntry("featureAngle", _featureAngle);
+    snapDict.readEntry("minEdgeForFeature", _minEdgeForFeature);
+    snapDict.readEntry("minFeatureEdgeLength", _minFeatureEdgeLength);
+    snapDict.readEntry("writeFeatures", _writeFeatures);
+    #else
+    snapDict.lookup("featureAngle") >> _featureAngle;
+    snapDict.lookup("minEdgeForFeature") >> _minEdgeForFeature;
+    snapDict.lookup("minFeatureEdgeLength") >> _minFeatureEdgeLength;
+    snapDict.lookup("writeFeatures") >> _writeFeatures;
+    #endif
 
     Info<< "  snapControls:"  << nl
         << "    - Feature angle              : " << _featureAngle  << nl
@@ -126,7 +133,7 @@ void Foam::SmootherBoundary::analyseDict(dictionary &snapDict)
 
                 if (!exist)
                 {
-                    WarningIn("Foam::MeshSmoother::analyseDict()")
+                    WarningInFunction
                         << "Patch " << bndDefined[patchI]
                         << " definied in smootherDict is not existing in "
                         << "polyMesh, existing patch in polyMesh ares: "
@@ -508,12 +515,12 @@ void Foam::SmootherBoundary::createPoints(labelList &pointType)
 
 Foam::SmootherBoundary::SmootherBoundary
 (
-    dictionary &snapDict,
+    const dictionary& snapDict,
     polyMesh* mesh
 )
 :
     _polyMesh(mesh),
-    _point(List<SmootherPoint*>(_polyMesh->nPoints()))
+    _point(_polyMesh->nPoints())
 {
     analyseDict(snapDict);
     List<labelHashSet> pp(mesh->nPoints());
@@ -527,7 +534,8 @@ Foam::SmootherBoundary::SmootherBoundary
     }
 }
 
-// * * * * * * * * * * * * * * * * Desctructor  * * * * * * * * * * * * * * //
+
+// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * //
 
 Foam::SmootherBoundary::~SmootherBoundary()
 {

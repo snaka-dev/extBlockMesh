@@ -1,3 +1,5 @@
+$(BACKPORT_SOURCES)
+
 MeshSmoother.C
 SmootherBoundary.C
 SmootherControl.C
