@@ -1,6 +1,7 @@
 /*---------------------------------------------------------------------------*\
   extBlockMesh
   Copyright (C) 2014 Etudes-NG
+  Copyright (C) 2020 OpenCFD Ltd.
   ---------------------------------
 License
     This file is part of extBlockMesh.
@@ -39,6 +40,7 @@ License
 
 #include <map>
 #include <set>
+#include <memory>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -110,7 +112,7 @@ class SmootherBoundary
         labelList analyseFeatures
         (
             List<labelHashSet>& pp,
-            std::set<std::set<label> >& fP
+            std::set<std::set<label>>& fP
         );
 
         void addTriFace(const label patch, triSurface *triSurf);
@@ -126,12 +128,12 @@ class SmootherBoundary
 
         void markPts
         (
-            surfaceFeatures *surfFeat,
+            const surfaceFeatures& surfFeat,
             std::map<label, label> &s2p,
             const bool uE,
             labelList &pointType,
             List<labelHashSet>& pp,
-            std::set<std::set<label> >& fP
+            std::set<std::set<label>>& fP
         );
 
         void createPoints(labelList &pointType);
@@ -165,7 +167,7 @@ public:
         (
             labelList& pointType,
             List<labelHashSet>& pp,
-            std::set<std::set<label> >& fP
+            std::set<std::set<label>>& fP
         ) const;
 
         void removeSnapPoint(const label ref);
