@@ -412,7 +412,7 @@ Foam::MeshSmoother::MeshSmoother
     const dictionary& smootherDict
 )
 :
-    _polyMesh(mesh),
+    _polyMesh(mesh)
 {
     const scalar time = _polyMesh->time().elapsedCpuTime();
 
@@ -428,7 +428,7 @@ Foam::MeshSmoother::MeshSmoother
 
     forAll(_cell, celli)
     {
-        _cell[cellI] = new SmootherCell(_polyMesh->cellShapes()[cellI]);
+        _cell[celli] = new SmootherCell(_polyMesh->cellShapes()[celli]);
     }
 
     // Analyse initial quality

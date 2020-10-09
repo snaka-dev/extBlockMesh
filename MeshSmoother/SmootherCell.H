@@ -62,11 +62,22 @@ class SmootherCell
     // Private Member Functions
 
         // Tetrahedral quality computation
-        scalar tetCellQuality(const label ref) const;
+        static scalar tetCellQuality
+        (
+            const cellShape& shape,
+            const label ref
+        );
 
-        // get point from cell position
-        inline const point& initPt(const label p) const;
-        inline const point& relaxPt(const label p) const;
+
+        inline static const point& initPt(const label pointi)
+        {
+            return _bnd->pt(pointi)->getInitialPoint();
+        }
+
+        inline static const point& relaxPt(const label pointi)
+        {
+            return _bnd->pt(pointi)->getRelaxedPoint();
+        }
 
 
 public:
@@ -81,35 +92,42 @@ public:
     ~SmootherCell() = default;
 
 
-    // Member Functions
+    // Static Functions
 
-        // Set static values
+        //- Set static values
         static void setStaticItems(SmootherBoundary* bnd, const scalar t);
 
-        // Copy clone
+        //- The cell quality for (hex) cell shape
+        static scalar quality(const cellShape& shape);
+
+        //- Transform (hex) cell
+        static pointField geometricTransform(const cellShape& shape);
+
+
+    // Member Functions
+
+        //- Copy clone
         autoPtr<SmootherCell> clone() const
         {
             return autoPtr<SmootherCell>(new SmootherCell(*this));
         }
 
-        // The cell quality
+        //- The current cell quality
         constexpr scalar quality() const noexcept { return _quality; }
 
-        void computeQuality();
+        //- Calculate the cell quality
+        inline void computeQuality()
+        {
+            _quality = SmootherCell::quality(_cellShape);
+        }
 
-        // Transform cell
-        pointField geometricTransform();
+        //- Transform (hex) cell
+        inline pointField geometricTransform() const
+        {
+            return SmootherCell::geometricTransform(_cellShape);
+        }
 };
 
-const point &SmootherCell::initPt(const label p) const
-{
-    return _bnd->pt(_cellShape[p])->getInitialPoint();
-}
-
-const point &SmootherCell::relaxPt(const label p) const
-{
-    return _bnd->pt(_cellShape[p])->getRelaxedPoint();
-}
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
