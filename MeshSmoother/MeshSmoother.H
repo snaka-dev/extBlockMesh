@@ -25,6 +25,7 @@ License
 #define MESHSMOOTHER_H
 
 #include "polyMesh.H"
+#include "scalarField.H"
 #include "PtrList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -34,7 +35,6 @@ namespace Foam
 
 // Forward Declarations
 class blockMesh;
-class SmootherCell;
 class SmootherControl;
 class SmootherParameter;
 class SmootherBoundary;
@@ -50,13 +50,13 @@ class MeshSmoother
         // Pointer of parents
         polyMesh *_polyMesh;
 
+        // Current cell quality. See SmootherCell
+        scalarField _cellQuality;
+
         // MeshSmoother child items
         SmootherControl* _ctrl;
         SmootherParameter* _param;
         SmootherBoundary* _bnd;
-
-        // Smoother cell and points
-        List<SmootherCell*> _cell;
 
 
     // Private Member Functions

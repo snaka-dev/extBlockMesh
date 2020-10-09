@@ -45,25 +45,6 @@ License
 
 namespace Foam
 {
-    // Update quality, for output
-    static void updateQuality
-    (
-        polyScalarField* pmeshQuality,
-        const UList<SmootherCell*>& _cell
-    )
-    {
-        if (pmeshQuality)
-        {
-            auto& meshQuality = *pmeshQuality;
-
-            forAll(meshQuality, celli)
-            {
-                meshQuality[celli] = _cell[celli]->quality();
-            }
-        }
-    }
-
-
     // Write mesh with error check
     static inline void writeMesh(polyMesh* mesh)
     {
@@ -81,30 +62,36 @@ namespace Foam
 
 void Foam::MeshSmoother::analyseMeshQuality()
 {
-    forAll(_cell, celli)
+    label celli = 0;
+    for (const cellShape& shape : _polyMesh->cellShapes())
     {
-        _cell[celli]->computeQuality();
+        _cellQuality[celli] = SmootherCell::quality(shape);
+        ++celli;
     }
 }
+
 
 void Foam::MeshSmoother::analyseMeshQuality(const labelHashSet &cell)
 {
     forAllConstIter(labelHashSet, cell, cellIter)
     {
         const label celli = cellIter.key();
-        _cell[celli]->computeQuality();
+        const cellShape& shape = _polyMesh->cellShapes()[celli];
+
+        _cellQuality[celli] = SmootherCell::quality(shape);
     }
 }
+
 
 void Foam::MeshSmoother::qualityStats()
 {
     scalar minQuality = 1.0;
     scalar meanQuality = 0.0;
 
-    scalarList pQSum(_polyMesh->nPoints(), 0.0);
+    scalarList pQSum(_polyMesh->nPoints(), Zero);
     forAll(_polyMesh->cells(), cellI)
     {
-        const scalar cQ = _cell[cellI]->quality();
+        const scalar cQ = _cellQuality[cellI];
         if (cQ < minQuality)
         {
             minQuality = cQ;
@@ -117,6 +104,7 @@ void Foam::MeshSmoother::qualityStats()
             pQSum[_polyMesh->cellPoints()[cellI][pointI]] += cQ;
         }
     }
+
     forAll(_polyMesh->points(), ptI)
     {
         _bnd->pt(ptI)->setQuality
@@ -131,23 +119,27 @@ void Foam::MeshSmoother::qualityStats()
     _param->setMeanQual(meanQuality);
 }
 
+
 Foam::labelHashSet Foam::MeshSmoother::addTransformedElementNodeWeight()
 {
     labelHashSet transformedPoints;
     forAll(_polyMesh->cells(), cellI)
     {
-        if (_cell[cellI]->quality() <= _param->transformationTreshold())
-        {
-            const pointField newCellPoints = _cell[cellI]->geometricTransform();
-            const cellShape& cS = _polyMesh->cellShapes()[cellI];
-            const scalar cQ = _cell[cellI]->quality();
+        const scalar cQ = _cellQuality[cellI];
 
+        if (cQ <= _param->transformationTreshold())
+        {
             if (cQ < VSMALL)
             {
                 FatalErrorInFunction
                     << "Quality of cell " << cellI << " is null" << nl
                     << exit(FatalError);
             }
+
+            const cellShape& cS = _polyMesh->cellShapes()[cellI];
+
+            const pointField newCellPoints =
+                SmootherCell::geometricTransform(cS);
 
             forAll(cS, pointI)
             {
@@ -175,8 +167,7 @@ void Foam::MeshSmoother::addUnTransformedElementNodeWeight(labelHashSet &tp)
     {
         if (untransformedAndhavePointTransformed(cellI, tp))
         {
-            const cellShape& cS = _polyMesh->cellShapes()[cellI];
-            const scalar cQ = _cell[cellI]->quality();
+            const scalar cQ = _cellQuality[cellI];
 
             if (cQ < VSMALL)
             {
@@ -185,7 +176,9 @@ void Foam::MeshSmoother::addUnTransformedElementNodeWeight(labelHashSet &tp)
                     << exit(FatalError);
             }
 
-            forAll (cS, pointI)
+            const cellShape& cS = _polyMesh->cellShapes()[cellI];
+
+            forAll(cS, pointI)
             {
                 SmootherPoint* pt = _bnd->pt(cS[pointI]);
 
@@ -206,7 +199,7 @@ bool Foam::MeshSmoother::untransformedAndhavePointTransformed
     const labelHashSet& tp
 )
 {
-    if (_cell[cellI]->quality() > _param->transformationTreshold())
+    if (_cellQuality[cellI] > _param->transformationTreshold())
     {
         const cellShape& cS = _polyMesh->cellShapes()[cellI];
         forAll(cS, ptI)
@@ -258,7 +251,7 @@ void Foam::MeshSmoother::iterativeNodeRelaxation
         {
             const label celli = cellIter.key();
 
-            if (_cell[celli]->quality() < VSMALL)
+            if (_cellQuality[celli] < VSMALL)
             {
                 tP.insert(_polyMesh->cellPoints()[celli]);
             }
@@ -412,7 +405,8 @@ Foam::MeshSmoother::MeshSmoother
     const dictionary& smootherDict
 )
 :
-    _polyMesh(mesh)
+    _polyMesh(mesh),
+    _cellQuality(mesh->nCells(), Zero)
 {
     const scalar time = _polyMesh->time().elapsedCpuTime();
 
@@ -421,15 +415,9 @@ Foam::MeshSmoother::MeshSmoother
 
     const dictionary& snapDict = smootherDict.subDict("snapControls");
     _bnd = new SmootherBoundary(snapDict, _polyMesh);
-    _cell = List<SmootherCell*>(_polyMesh->nCells());
 
     SmootherCell::setStaticItems(_bnd, _ctrl->transformationParameter());
     SmootherPoint::setStaticItems(_bnd, _param, _polyMesh);
-
-    forAll(_cell, celli)
-    {
-        _cell[celli] = new SmootherCell(_polyMesh->cellShapes()[celli]);
-    }
 
     // Analyse initial quality
     analyseMeshQuality();
@@ -453,11 +441,6 @@ Foam::MeshSmoother::MeshSmoother
 
 Foam::MeshSmoother::~MeshSmoother()
 {
-    forAll(_cell, cellI)
-    {
-        delete _cell[cellI];
-    }
-
     delete _param;
     delete _bnd;
     delete _ctrl;
@@ -500,15 +483,14 @@ Foam::label Foam::MeshSmoother::updateAndWrite
                     IOobject::AUTO_WRITE
                 ),
                 *_polyMesh,
-                scalar(0)
+                dimless,
+                _cellQuality  // Copy in current quality field
             )
         );
     }
 
 
     label nWritten = 1;
-
-    updateQuality(qualityFieldPtr.get(), _cell);
     writeMesh(_polyMesh);
 
     while (runIteration())
@@ -519,7 +501,12 @@ Foam::label Foam::MeshSmoother::updateAndWrite
         ++runTime;
         ++nWritten;
 
-        updateQuality(qualityFieldPtr.get(), _cell);
+        if (qualityFieldPtr)
+        {
+            // Update quality for output
+            qualityFieldPtr->field() = _cellQuality;
+        }
+
         writeMesh(_polyMesh);
     }
 
@@ -531,14 +518,12 @@ Foam::label Foam::MeshSmoother::updateAndWrite
 
 Foam::scalar Foam::MeshSmoother::getTransformationTreshold() const
 {
-    scalarList cqs(_polyMesh->nCells());
-    forAll(_polyMesh->cells(), cellI)
-    {
-        cqs[cellI] = _cell[cellI]->quality();
-    }
-    std::sort(cqs.begin(), cqs.end());
+    labelList order;
+    Foam::sortedOrder(_cellQuality, order);
 
-    return cqs[std::floor(_polyMesh->nCells()*_ctrl->ratioForMin())];
+    const label minIndex = std::floor(order.size() * _ctrl->ratioForMin());
+
+    return _cellQuality[order[minIndex]];
 }
 
 
