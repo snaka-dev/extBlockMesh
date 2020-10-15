@@ -1,6 +1,7 @@
 /*---------------------------------------------------------------------------*\
   extBlockMesh
   Copyright (C) 2014 Etudes-NG
+  Copyright (C) 2020 OpenCFD Ltd.
   ---------------------------------
 License
     This file is part of extBlockMesh.
@@ -24,14 +25,8 @@ License
 #define MESHSMOOTHER_H
 
 #include "polyMesh.H"
-
-#if (OPENFOAM >= 1806)
-    #include "polyFields.H"
-#else
-    #include "volFields.H"
-#endif
-
-#include <map>
+#include "scalarField.H"
+#include "PtrList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -40,46 +35,35 @@ namespace Foam
 
 // Forward Declarations
 class blockMesh;
-class SmootherCell;
 class SmootherControl;
 class SmootherParameter;
 class SmootherBoundary;
 
 /*---------------------------------------------------------------------------*\
-                      Class blockMeshSmoother Declaration
+                        Class MeshSmoother Declaration
 \*---------------------------------------------------------------------------*/
 
 class MeshSmoother
 {
-    // Typedefs
-
-        #if (OPENFOAM >= 1806)
-        typedef polyScalarField qualityFieldType;
-        #else
-        typedef volScalarField qualityFieldType;
-        #endif
-
-
     // Private Data
 
         // Pointer of parents
         polyMesh *_polyMesh;
-        blockMesh *_blocks;
+
+        // Current cell quality. See SmootherCell
+        scalarField _cellQuality;
 
         // MeshSmoother child items
         SmootherControl* _ctrl;
         SmootherParameter* _param;
         SmootherBoundary* _bnd;
 
-        // Smoother cell and points
-        List<SmootherCell*> _cell;
-
 
     // Private Member Functions
 
         // Quality analysis
         void analyseMeshQuality();
-        void analyseMeshQuality(const labelHashSet &cell);
+        void analyseMeshQuality(const labelHashSet& cell);
         void qualityStats();
 
         // GETMe smoothing
@@ -97,10 +81,6 @@ class MeshSmoother
         bool runIteration();
         pointField getMovedPoints() const;
 
-
-        //- Write the mesh and meshQuality
-        void writeMesh(qualityFieldType& meshQuality) const;
-
         // Smoothing algo
         void GETMeSmoothing();
         void snapSmoothing();
@@ -109,13 +89,8 @@ public:
 
     //- Constructors
 
-        //- Construct from polyMesh and dictionary
-        MeshSmoother
-        (
-            polyMesh *mesh,
-            dictionary *smootherDict,
-            blockMesh *blocks = nullptr
-        );
+        //- Construct from polyMesh and smoother dictionary
+        MeshSmoother(polyMesh *mesh, const dictionary& smootherDict);
 
 
     //- Destructor
@@ -124,25 +99,13 @@ public:
 
     // Member Functions
 
-        //- Attach blocks to the smoother. A nullptr is allowed
-        void setBlocks(blockMesh* blocks);
-
         //- Smooth the mesh acording to smoothDict
         void update();
 
-        //- Smooth the mesh acording to smoothDict and write intermediate mesh
-        //  \return the number of fields written
-        label updateAndWrite(Time& runTime);
-
-        //- Smooth the mesh acording to smoothDict and write intermediate mesh
-        //  \return the number of fields written
-        label updateAndWrite
-        (
-            word& regionName,
-            word& defaultFacesName,
-            word& defaultFacesType,
-            Time& runTime
-        );
+        //- Smooth mesh acording to smoothDict,
+        //- writing intermediate mesh, optionally write the quality field
+        //  \return the number of time-steps written
+        label updateAndWrite(Time& runTime, const bool withQuality=false);
 
         //- Get tranformation treshold
         scalar getTransformationTreshold() const;

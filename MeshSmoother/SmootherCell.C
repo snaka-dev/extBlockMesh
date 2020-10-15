@@ -1,6 +1,7 @@
 /*---------------------------------------------------------------------------*\
   extBlockMesh
   Copyright (C) 2014 Etudes-NG
+  Copyright (C) 2020 OpenCFD Ltd.
   ---------------------------------
 License
     This file is part of extBlockMesh.
@@ -28,9 +29,22 @@ Foam::scalar Foam::SmootherCell::_transParam = 1.0;
 Foam::SmootherBoundary* Foam::SmootherCell::_bnd = nullptr;
 
 
+// * * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * //
+
+void Foam::SmootherCell::setStaticItems(SmootherBoundary* bnd, const scalar t)
+{
+    _transParam = t;
+    _bnd = bnd;
+}
+
+
 // * * * * * * * * * * * * * * * Private Functions * * * * * * * * * * * * * //
 
-Foam::scalar Foam::SmootherCell::tetCellQuality(const label ref) const
+Foam::scalar Foam::SmootherCell::tetCellQuality
+(
+    const cellShape& shape,
+    const label ref
+)
 {
     const label v1[] = {3, 0, 1, 2, 7, 4, 5, 6};
     const label v2[] = {4, 5, 6, 7, 5, 6, 7, 4};
@@ -38,9 +52,9 @@ Foam::scalar Foam::SmootherCell::tetCellQuality(const label ref) const
 
     const Tensor<scalar> mA
     (
-        relaxPt(v1[ref]) - relaxPt(ref),
-        relaxPt(v2[ref]) - relaxPt(ref),
-        relaxPt(v3[ref]) - relaxPt(ref)
+        relaxPt(shape[v1[ref]]) - relaxPt(shape[ref]),
+        relaxPt(shape[v2[ref]]) - relaxPt(shape[ref]),
+        relaxPt(shape[v3[ref]]) - relaxPt(shape[ref])
     );
     const scalar sigma(det(mA));
 
@@ -56,34 +70,36 @@ Foam::scalar Foam::SmootherCell::tetCellQuality(const label ref) const
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::SmootherCell::SmootherCell(const cellShape &cell)
+Foam::SmootherCell::SmootherCell(const cellShape& shape)
 :
-    _cellShape(cell)
+    _cellShape(shape),
+    _quality(0)
 {}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::SmootherCell::computeQuality()
+Foam::scalar Foam::SmootherCell::quality(const cellShape& shape)
 {
-    _quality = 0.0;
-    forAll(_cellShape, ptI)
+    scalar avgQuality = 0;
+
+    forAll(shape, pointi)
     {
-        const scalar tetQuality(tetCellQuality(ptI));
+        const scalar tetQuality(tetCellQuality(shape, pointi));
 
         if (tetQuality < ROOTVSMALL)
         {
-            _quality = 0;
-            return;
+            return 0;
         }
-        _quality += tetQuality;
+
+        avgQuality += tetQuality;
     }
 
-    _quality /= 8.0;
+    return (avgQuality / scalar(8));
 }
 
 
-Foam::pointField Foam::SmootherCell::geometricTransform()
+Foam::pointField Foam::SmootherCell::geometricTransform(const cellShape& shape)
 {
     // TODO if found a way to have the face label from cellShape,
     // store face centre in MeshSmoother and avoid use of pointFields dO
@@ -96,16 +112,24 @@ Foam::pointField Foam::SmootherCell::geometricTransform()
     const label g[] = {1, 4, 5, 6, 3, 7};
     const label h[] = {2, 5, 6, 7, 7, 6};
     const label i[] = {3, 1, 2, 3, 4, 5};
+
     for (label j = 0; j < 6; ++j)
     {
-        fc[j] = (initPt(f[j]) + initPt(g[j]) + initPt(h[j]) + initPt(i[j]))/4.0;
+        fc[j] =
+        (
+            initPt(shape[f[j]])
+          + initPt(shape[g[j]])
+          + initPt(shape[h[j]])
+          + initPt(shape[i[j]])
+        ) / 4.0;
     }
 
-    // Transfomred points
+    // Transformed points
     pointField H(8);
     const label a[] = {0, 0, 0, 0, 5, 5, 5, 5};
     const label b[] = {1, 2, 3, 4, 4, 1, 2, 3};
     const label d[] = {4, 1, 2, 3, 1, 2, 3, 4};
+
     for (label j = 0; j < 8; ++j)
     {
         const point c = (fc[a[j]] + fc[b[j]] + fc[d[j]])/3.0;
@@ -117,9 +141,14 @@ Foam::pointField Foam::SmootherCell::geometricTransform()
     scalar length = 0.0, lengthN = 0.0;
     const label k[] = {0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 6, 7};
     const label l[] = {1, 2, 3, 0, 4, 5, 6, 7, 5, 6, 7, 4};
+
     for (label j = 0; j < 12; ++j)
     {
-        length += mag(initPt(k[j]) - initPt(l[j]));
+        length += mag
+        (
+            initPt(shape[k[j]])
+          - initPt(shape[l[j]])
+        );
         lengthN += mag(H[k[j]] - H[l[j]]);
     }
     length /= lengthN;
@@ -128,13 +157,6 @@ Foam::pointField Foam::SmootherCell::geometricTransform()
     const pointField C(8, c);
 
     return pointField(C + length*(H - C));
-}
-
-
-void Foam::SmootherCell::setStaticItems(SmootherBoundary* bnd, const scalar &t)
-{
-    _transParam = t;
-    _bnd = bnd;
 }
 
 

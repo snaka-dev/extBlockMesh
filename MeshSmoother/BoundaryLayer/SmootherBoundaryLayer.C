@@ -1,6 +1,7 @@
 /*---------------------------------------------------------------------------*\
   extBlockMesh
   Copyright (C) 2014 Etudes-NG
+  Copyright (C) 2020 OpenCFD Ltd.
   ---------------------------------
 License
     This file is part of extBlockMesh.
@@ -22,31 +23,38 @@ License
 
 #include "SmootherBoundaryLayer.H"
 
-// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
-
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
-
-Foam::SmootherBoundaryLayer::SmootherBoundaryLayer(const dictionary &blDict)
-:
-    _nbLayers(readLabel(blDict.lookup("nSurfaceLayers"))),
-    _expansionRatio(readScalar(blDict.lookup("expansionRatio"))),
-    _relativeSize(readBool(blDict.lookup("relativeSizes"))),
-    _finalLayerThickness(readScalar(blDict.lookup("finalLayerThickness")))
-{
-    Info<< "        - Number of BL       : " << _nbLayers << nl;
-    Info<< "        - Expansion ratio    : " << _expansionRatio << nl;
-    Info<< "        - Relatice size      : " << _relativeSize << nl;
-    Info<< "        - Final thickness    : " << _finalLayerThickness << nl;
-}
-
 
 Foam::SmootherBoundaryLayer::SmootherBoundaryLayer()
 :
-    _nbLayers(0.0),
-    _expansionRatio(1.0),
-    _relativeSize(true),
-    _finalLayerThickness(1)
+    _nbLayers(0),
+    _expansionRatio(1),
+    _finalLayerThickness(1),
+    _relativeSize(true)
 {}
+
+
+Foam::SmootherBoundaryLayer::SmootherBoundaryLayer(const dictionary& dict)
+:
+    SmootherBoundaryLayer()
+{
+    #if (OPENFOAM >= 1812)
+    dict.readEntry("nSurfaceLayers", _nbLayers);
+    dict.readEntry("expansionRatio", _expansionRatio);
+    dict.readEntry("finalLayerThickness", _finalLayerThickness);
+    dict.readEntry("relativeSizes", _relativeSize);
+    #else
+    dict.lookup("nSurfaceLayers") >> _nbLayers;
+    dict.lookup("expansionRatio") >> _expansionRatio;
+    dict.lookup("finalLayerThickness") >> _finalLayerThickness;
+    dict.lookup("relativeSizes") >> _relativeSize;
+    #endif
+
+    Info<< "        - Number of BL       : " << _nbLayers << nl
+        << "        - Expansion ratio    : " << _expansionRatio << nl
+        << "        - Relative size      : " << _relativeSize << nl
+        << "        - Final thickness    : " << _finalLayerThickness << nl;
+}
 
 
 // ************************************************************************* //

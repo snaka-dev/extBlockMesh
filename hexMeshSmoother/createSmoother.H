@@ -24,5 +24,5 @@ autoPtr<MeshSmoother> smootherPtr;
     Info<< nl << "Initialize smoother algorithm" << nl;
 
     smootherDictPtr.reset(new IOdictionary(smootherDictIO));
-    smootherPtr.reset(new MeshSmoother(&mesh, &(smootherDictPtr())));
+    smootherPtr.reset(new MeshSmoother(&mesh, smootherDictPtr()));
 }

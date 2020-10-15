@@ -1,6 +1,7 @@
 /*---------------------------------------------------------------------------*\
   extBlockMesh
   Copyright (C) 2014 Etudes-NG
+  Copyright (C) 2020 OpenCFD Ltd.
   ---------------------------------
 License
     This file is part of extBlockMesh.
@@ -39,6 +40,7 @@ License
 
 #include <map>
 #include <set>
+#include <memory>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -71,6 +73,9 @@ class SmootherBoundary
         // Pointer to polyMesh
         polyMesh* _polyMesh;
 
+        // Point as SmootherPoints
+        List<SmootherPoint*> _point;
+
         // Searchable surfaces list
         List<triSurface*> _triSurfList;
         List<triSurfaceSearch*> _triSurfSearchList;
@@ -88,9 +93,6 @@ class SmootherBoundary
         std::map<label, label> _pointFeature;
         std::map<label, labelHashSet> _pointFeatureSet;
 
-        // Point as SmootherPoints
-        List<SmootherPoint*> _point;
-
         // Hash set of specific points
         labelHashSet _unsnapedPoint;
         labelHashSet _featuresPoint;
@@ -102,14 +104,15 @@ class SmootherBoundary
         label _minEdgeForFeature;
         bool _writeFeatures;
 
-    //- Private member functions
 
-        void analyseDict(dictionary &snapDict);
+    // Private Member Functions
+
+        void analyseDict(const dictionary& snapDict);
 
         labelList analyseFeatures
         (
             List<labelHashSet>& pp,
-            std::set<std::set<label> >& fP
+            std::set<std::set<label>>& fP
         );
 
         void addTriFace(const label patch, triSurface *triSurf);
@@ -125,12 +128,12 @@ class SmootherBoundary
 
         void markPts
         (
-            surfaceFeatures *surfFeat,
+            const surfaceFeatures& surfFeat,
             std::map<label, label> &s2p,
             const bool uE,
             labelList &pointType,
             List<labelHashSet>& pp,
-            std::set<std::set<label> >& fP
+            std::set<std::set<label>>& fP
         );
 
         void createPoints(labelList &pointType);
@@ -139,12 +142,14 @@ public:
 
     //- Constructors
 
-        SmootherBoundary(dictionary& snapDict, polyMesh* mesh);
+        SmootherBoundary(const dictionary& snapDict, polyMesh* mesh);
+
 
     //- Destructor
     ~SmootherBoundary();
 
-    //- Member functions
+
+    // Member Functions
 
         // Get snaped point
         inline point snapToSurf(const label r, const point &pt) const;
@@ -162,13 +167,14 @@ public:
         (
             labelList& pointType,
             List<labelHashSet>& pp,
-            std::set<std::set<label> >& fP
+            std::set<std::set<label>>& fP
         ) const;
 
         void removeSnapPoint(const label ref);
 
         void writeAllSurfaces(const label iterRef) const;
 };
+
 
 point SmootherBoundary::snapToSurf(const label r, const point &pt) const
 {

@@ -41,7 +41,7 @@ class SmootherFeature
 {
 protected:
 
-    // Protected data
+    // Protected Data
 
         //- Feature ref
         label _featureRef;
@@ -50,6 +50,7 @@ protected:
         point _snapPoint;
 
 public:
+
     SmootherFeature(const label ref, const label featureRef, const point &pt);
 
     ~SmootherFeature() {}

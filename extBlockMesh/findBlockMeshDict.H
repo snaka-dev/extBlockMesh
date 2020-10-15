@@ -6,13 +6,23 @@ autoPtr<IOdictionary> meshDictPtr;
 {
     fileName dictPath;
 
-    if (args.readIfPresent("dict", dictPath))
+    if
+    (
+        #if (OPENFOAM < 1812)
+        args.optionReadIfPresent("dict", dictPath)
+        #else
+        args.readIfPresent("dict", dictPath)
+        #endif
+    )
+
     {
         // Dictionary specified on the command-line ...
 
         if (isDir(dictPath))
         {
-            dictPath /= dictName;
+            //Newer:  dictPath /= dictName;
+            //Older:
+            dictPath = dictPath / dictName;
         }
     }
     else if
@@ -64,9 +74,14 @@ autoPtr<IOdictionary> meshDictPtr;
     }
 
     Info<< "Creating block mesh from "
-        << runTime.relativePath(meshDictIO.objectPath()) << endl;
+        //Newer: << runTime.relativePath(meshDictIO.objectPath()) << endl;
+        //Older:
+        << meshDictIO.objectPath() << endl;
 
-    meshDictPtr = autoPtr<IOdictionary>::New(meshDictIO);
+    meshDictPtr.reset(new IOdictionary(meshDictIO));
 }
 
-const IOdictionary& meshDict = *meshDictPtr;
+//Newer:  const IOdictionary& meshDict = *meshDictPtr;
+
+//Older:
+const IOdictionary& meshDict = meshDictPtr();

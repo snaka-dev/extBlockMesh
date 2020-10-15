@@ -23,6 +23,7 @@ License
 #ifndef MESHSMOOTHERCONTROL_H
 #define MESHSMOOTHERCONTROL_H
 
+#include "word.H"
 #include "scalarList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -39,8 +40,7 @@ class dictionary;
 
 class SmootherControl
 {
-
-    //- Private data
+    // Private data
 
         scalarList _meanRelaxTable;
         scalarList _minRelaxTable;
@@ -52,12 +52,18 @@ class SmootherControl
         label _maxIterations;
 
 public:
+
     //- Constructors
 
         //- Construct from dictionary
-        SmootherControl(dictionary *smootherDict);
+        explicit SmootherControl
+        (
+            const dictionary& smootherDict,
+            const word& subDictName = "smoothControls"
+        );
 
-    //- Member functions
+
+    // Member Functions
 
         // Get iteration limit
         const label& maxIteration() const {return _maxIterations;}

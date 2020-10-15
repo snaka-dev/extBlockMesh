@@ -61,6 +61,7 @@ void Foam::SmootherPoint::setStaticItems
     _polyMesh = mesh;
 }
 
+
 void Foam::SmootherPoint::laplaceSmooth()
 {
     const labelList& pp = _polyMesh->pointPoints(_ptRef);

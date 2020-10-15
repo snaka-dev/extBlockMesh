@@ -1,6 +1,7 @@
 /*---------------------------------------------------------------------------*\
   extBlockMesh
   Copyright (C) 2014 Etudes-NG
+  Copyright (C) 2020 OpenCFD Ltd.
   ---------------------------------
 License
     This file is part of extBlockMesh.
@@ -29,19 +30,26 @@ License
 #include "dictionary.H"
 #include "polyMesh.H"
 #include "Time.H"
-#include <OFstream.H>
 #include "unitConversion.H"
+#include <OFstream.H>
 
 #include <sstream>
 
 // * * * * * * * * * * * * * * * Private Functions * * * * * * * * * * * * * //
 
-void Foam::SmootherBoundary::analyseDict(dictionary &snapDict)
+void Foam::SmootherBoundary::analyseDict(const dictionary& snapDict)
 {
-    _featureAngle = readScalar(snapDict.lookup("featureAngle"));
-    _minEdgeForFeature = readLabel(snapDict.lookup("minEdgeForFeature"));
-    _minFeatureEdgeLength = readScalar(snapDict.lookup("minFeatureEdgeLength"));
-    _writeFeatures = readBool(snapDict.lookup("writeFeatures"));
+    #if (OPENFOAM >= 1812)
+    snapDict.readEntry("featureAngle", _featureAngle);
+    snapDict.readEntry("minEdgeForFeature", _minEdgeForFeature);
+    snapDict.readEntry("minFeatureEdgeLength", _minFeatureEdgeLength);
+    snapDict.readEntry("writeFeatures", _writeFeatures);
+    #else
+    snapDict.lookup("featureAngle") >> _featureAngle;
+    snapDict.lookup("minEdgeForFeature") >> _minEdgeForFeature;
+    snapDict.lookup("minFeatureEdgeLength") >> _minFeatureEdgeLength;
+    snapDict.lookup("writeFeatures") >> _writeFeatures;
+    #endif
 
     Info<< "  snapControls:"  << nl
         << "    - Feature angle              : " << _featureAngle  << nl
@@ -96,8 +104,11 @@ void Foam::SmootherBoundary::analyseDict(dictionary &snapDict)
                             IOobject::NO_WRITE
                         );
 
-                        triSurface* bnd = new triSurface(surfFile.objectPath());
-                        addTriFace(patchJ, bnd);
+                        addTriFace
+                        (
+                            patchJ,
+                            new triSurface(surfFile.objectPath())
+                        );
 
                         if (patchDic.found("internalFeatureEdges"))
                         {
@@ -126,7 +137,7 @@ void Foam::SmootherBoundary::analyseDict(dictionary &snapDict)
 
                 if (!exist)
                 {
-                    WarningIn("Foam::MeshSmoother::analyseDict()")
+                    WarningInFunction
                         << "Patch " << bndDefined[patchI]
                         << " definied in smootherDict is not existing in "
                         << "polyMesh, existing patch in polyMesh ares: "
@@ -142,7 +153,7 @@ void Foam::SmootherBoundary::analyseDict(dictionary &snapDict)
 Foam::labelList Foam::SmootherBoundary::analyseFeatures
 (
     List<labelHashSet> &pp,
-    std::set<std::set<label> >& fP
+    std::set<std::set<label>>& fP
 )
 {
     Info<< "  Analyse features" << nl;
@@ -163,17 +174,19 @@ Foam::labelList Foam::SmootherBoundary::analyseFeatures
 
         // Renumber points
         pointField surfacePoints(p2s.size());
-        std::map<label, label>::iterator ptI;
-        for(ptI = p2s.begin(); ptI != p2s.end(); ++ptI)
+        for (const auto& ptIter : p2s)
         {
-            surfacePoints[ptI->second] = _polyMesh->points()[ptI->first];
+            surfacePoints[ptIter.second] = _polyMesh->points()[ptIter.first];
         }
 
-        triSurface* triSurf = new triSurface(triFace, patchName, surfacePoints);
-        surfaceFeatures* sF;
-        sF = new surfaceFeatures(*triSurf, _featureAngle, 0, 0, false);
+        std::unique_ptr<triSurface> triSurf
+        (
+            new triSurface(triFace, patchName, surfacePoints)
+        );
 
-        sF->trimFeatures
+        surfaceFeatures sF(*triSurf, _featureAngle, 0, 0, false);
+
+        sF.trimFeatures
         (
             _minFeatureEdgeLength,
             _minEdgeForFeature,
@@ -182,10 +195,10 @@ Foam::labelList Foam::SmootherBoundary::analyseFeatures
 
         markPts(sF, s2p, _bndUseIntEdges[patchI], pointType, pp, fP);
 
-        if (_triSurfSearchList[patchI] == 0)
-        { // Store trisurface from blockMesh
-
-            addTriFace(patchI, triSurf);
+        if (_triSurfSearchList[patchI] == nullptr)
+        {
+            // Store trisurface from blockMesh
+            addTriFace(patchI, triSurf.release());
         }
     }
 
@@ -301,8 +314,8 @@ Foam::List<Foam::labelledTri> Foam::SmootherBoundary::analyseBoundaryFace
             labelList ptTri(3);
             forAll(ptTri, ptI)
             {
-                std::map<label, label>::iterator iter;
-                iter = p2s.find(f[ptPoly[ptI]]);
+                std::map<label, label>::iterator iter =
+                    p2s.find(f[ptPoly[ptI]]);
 
                 if (iter != p2s.end())
                 {
@@ -340,19 +353,20 @@ Foam::label Foam::SmootherBoundary::getRefFromFace(const face &faceI)
     return faceRef.begin().key();
 }
 
+
 void Foam::SmootherBoundary::markPts
 (
-    surfaceFeatures* surfFeat,
+    const surfaceFeatures& surfFeat,
     std::map<label,label> &s2p,
     const bool uE,
     labelList &pointType,
     List<labelHashSet>& pp,
-    std::set<std::set<label> >& fP
+    std::set<std::set<label>>& fP
 )
 {
-    const triSurface& triSurf = surfFeat->surface();
+    const triSurface& triSurf = surfFeat.surface();
+    const labelList& featEdges = surfFeat.featureEdges();
     const edgeList& edgeLst = triSurf.edges();
-    const labelList& featEdges = surfFeat->featureEdges();
 
     // Store faces points
     forAll(triSurf, faceI)
@@ -375,7 +389,7 @@ void Foam::SmootherBoundary::markPts
     }
 
     // Create set of edges existing in polyMesh
-    std::set<std::set<label> >  polyMeshEdges;
+    std::set<std::set<label>>  polyMeshEdges;
     forAll(_polyMesh->edges(), edgeI)
     {
         std::set<label> edgeDef;
@@ -439,7 +453,7 @@ void Foam::SmootherBoundary::markPts
 
 
 //    // Mark vertex points TODO add edges points
-//    const labelList& fPts = surfFeat->featurePoints();
+//    const labelList& fPts = surfFeat.featurePoints();
 //    forAll(fPts, vertexI)
 //    {
 //        pointType[s2p[fPts[vertexI]]] = VERTEX;
@@ -508,16 +522,16 @@ void Foam::SmootherBoundary::createPoints(labelList &pointType)
 
 Foam::SmootherBoundary::SmootherBoundary
 (
-    dictionary &snapDict,
+    const dictionary& snapDict,
     polyMesh* mesh
 )
 :
     _polyMesh(mesh),
-    _point(List<SmootherPoint*>(_polyMesh->nPoints()))
+    _point(_polyMesh->nPoints())
 {
     analyseDict(snapDict);
     List<labelHashSet> pp(mesh->nPoints());
-    std::set<std::set<label> > fP;
+    std::set<std::set<label>> fP;
     labelList pointType = analyseFeatures(pp, fP);
     createPoints(pointType);
 
@@ -527,7 +541,8 @@ Foam::SmootherBoundary::SmootherBoundary
     }
 }
 
-// * * * * * * * * * * * * * * * * Desctructor  * * * * * * * * * * * * * * //
+
+// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * //
 
 Foam::SmootherBoundary::~SmootherBoundary()
 {
@@ -563,7 +578,7 @@ void Foam::SmootherBoundary::writeFeatures
 (
     labelList &pointType,
     List<labelHashSet> &pp,
-    std::set<std::set<label> >& fP
+    std::set<std::set<label>>& fP
 ) const
 {
     const pointField& pt = _polyMesh->points();
@@ -605,7 +620,7 @@ void Foam::SmootherBoundary::writeFeatures
 
     // Map of points poly to vtk ref
     std::map<label, label> p2vtk;
-    std::set<std::set<label> > edges;
+    std::set<std::set<label>> edges;
     forAll(pointType, ptI)
     {
         if (pointType[ptI] == VERTEX || pointType[ptI] == EDGE)
@@ -644,7 +659,7 @@ void Foam::SmootherBoundary::writeFeatures
     eOut<< nl << "LINES " << edges.size() << " " << edges.size()*3 << nl;
     for
     (
-        std::set<std::set<label> >::iterator edgeI = edges.begin();
+        std::set<std::set<label>>::iterator edgeI = edges.begin();
         edgeI != edges.end();
         ++edgeI
     )
@@ -692,7 +707,7 @@ void Foam::SmootherBoundary::writeFeatures
     bOut<< nl << "POLYGONS " << fP.size() << " " << fP.size()*4 << nl;
     for
     (
-        std::set<std::set<label> >::iterator faceI = fP.begin();
+        std::set<std::set<label>>::iterator faceI = fP.begin();
         faceI != fP.end();
         ++faceI
     )

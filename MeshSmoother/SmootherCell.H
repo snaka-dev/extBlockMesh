@@ -1,6 +1,7 @@
 /*---------------------------------------------------------------------------*\
   extBlockMesh
   Copyright (C) 2014 Etudes-NG
+  Copyright (C) 2020 OpenCFD Ltd.
   ---------------------------------
 License
     This file is part of extBlockMesh.
@@ -40,29 +41,43 @@ namespace Foam
 
 class SmootherCell
 {
+    // Static Data
 
-    //- Private data
-
-        // Pointer of smoother boundary
+        // Pointer to smoother boundary
         static SmootherBoundary* _bnd;
 
         // Transformation parameter
         static scalar _transParam;
 
-        // Cell quality (mean ratio)
-        scalar _quality;
+
+    // Private Data
 
         // Reference of cell shape
         const cellShape& _cellShape;
 
-    //- Private member functions
+        //- Cell quality (mean ratio)
+        scalar _quality;
+
+
+    // Private Member Functions
 
         // Tetrahedral quality computation
-        scalar tetCellQuality(const label ref) const;
+        static scalar tetCellQuality
+        (
+            const cellShape& shape,
+            const label ref
+        );
 
-        // get point from cell position
-        inline const point& initPt(const label p) const;
-        inline const point& relaxPt(const label p) const;
+
+        inline static const point& initPt(const label pointi)
+        {
+            return _bnd->pt(pointi)->getInitialPoint();
+        }
+
+        inline static const point& relaxPt(const label pointi)
+        {
+            return _bnd->pt(pointi)->getRelaxedPoint();
+        }
 
 
 public:
@@ -70,31 +85,49 @@ public:
     //- Constructors
 
         //- Construct from cellShape
-        SmootherCell(const cellShape& cell);
+        explicit SmootherCell(const cellShape& shape);
 
 
-    //- Member functions
+    //- Destructor
+    ~SmootherCell() = default;
 
-        // Set/get cell quality
-        const scalar& quality() const{return _quality;}
-        void computeQuality();
 
-        // Transform cell
-        pointField geometricTransform();
+    // Static Functions
 
-        // Set/get polyMesh
-        void setStaticItems(SmootherBoundary *bnd, const scalar& t);
+        //- Set static values
+        static void setStaticItems(SmootherBoundary* bnd, const scalar t);
+
+        //- The cell quality for (hex) cell shape
+        static scalar quality(const cellShape& shape);
+
+        //- Transform (hex) cell
+        static pointField geometricTransform(const cellShape& shape);
+
+
+    // Member Functions
+
+        //- Copy clone
+        autoPtr<SmootherCell> clone() const
+        {
+            return autoPtr<SmootherCell>(new SmootherCell(*this));
+        }
+
+        //- The current cell quality
+        constexpr scalar quality() const noexcept { return _quality; }
+
+        //- Calculate the cell quality
+        inline void computeQuality()
+        {
+            _quality = SmootherCell::quality(_cellShape);
+        }
+
+        //- Transform (hex) cell
+        inline pointField geometricTransform() const
+        {
+            return SmootherCell::geometricTransform(_cellShape);
+        }
 };
 
-const point &SmootherCell::initPt(const label p) const
-{
-    return _bnd->pt(_cellShape[p])->getInitialPoint();
-}
-
-const point &SmootherCell::relaxPt(const label p) const
-{
-    return _bnd->pt(_cellShape[p])->getRelaxedPoint();
-}
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
