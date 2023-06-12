@@ -60,8 +60,8 @@ int main(int argc, char *argv[])
     IOstream::defaultPrecision(max(10u, IOstream::defaultPrecision()));
 
     // Smoothing
-    const bool withQuality = args.optionFound("write-quality");
-    const bool writeSteps = args.optionFound("writeSteps");
+    const bool withQuality = args.found("write-quality");
+    const bool writeSteps = args.found("writeSteps");
 
     label nWritten = 0;
     {

@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
     word regionPath;
 
     // Check if the region is specified otherwise mesh the default region
-    if (args.optionReadIfPresent("region", regionName))
+    if (args.readIfPresent("region", regionName))
     {
         Info<< nl << "Generating mesh for region " << regionName << endl;
         regionPath = regionName;
@@ -164,8 +164,8 @@ int main(int argc, char *argv[])
 
 
     // Smoothing
-    const bool withQuality = args.optionFound("write-quality");
-    const bool writeSteps = args.optionFound("writeSteps");
+    const bool withQuality = args.found("write-quality");
+    const bool writeSteps = args.found("writeSteps");
 
     label nWritten = 0;
     {

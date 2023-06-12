@@ -170,7 +170,9 @@ Foam::labelList Foam::SmootherBoundary::analyseFeatures
 
         geometricSurfacePatchList patchName;
         const polyPatch &patch = _polyMesh->boundaryMesh()[patchI];
-        patchName.append(geometricSurfacePatch(word(""), patch.name(), patchI));
+	// old style before 2020-01
+        //patchName.append(geometricSurfacePatch(word(""), patch.name(), patchI));
+        patchName.append(geometricSurfacePatch(patch.name(), patchI, word("")));
 
         // Renumber points
         pointField surfacePoints(p2s.size());
